@@ -305,6 +305,7 @@ footer{margin-top:16px;color:var(--muted);font-size:12px}
             <button class="sk" id="bPause" disabled>Dalgaları dondur</button>
             <button class="sk" id="bIHold" disabled data-i="bIH">İnspiratuvar tutma</button>
             <button class="sk" id="bEHold" disabled data-i="bEH">Ekspiratuvar tutma</button>
+            <button class="sk" id="skMarks"></button>
             <button class="sk" id="skDay" data-i="skD">Gündüz / Gece</button>
             <button class="sk fsk" id="bFs">Tam ekran</button>
           </div>
@@ -343,6 +344,7 @@ footer{margin-top:16px;color:var(--muted);font-size:12px}
     <div class="sec keys" data-i="keys"><h4>Klavye ve fare</h4><ul>
       <li><kbd>Boşluk</kbd> dalgaları dondurur / devam ettirir</li>
       <li><kbd>F</kbd> tam ekran, <kbd>Esc</kbd> çıkış</li>
+      <li><kbd>L</kbd> olay etiketlerini gizler / gösterir</li>
       <li>Bir ayar düğmesine tıklayın, sonra <kbd>↑</kbd> <kbd>↓</kbd> ya da <kbd>←</kbd> <kbd>→</kbd> ile değiştirin</li>
       <li>Düğmenin üstünde fare tekerleği ya da yukarı-aşağı sürükleme de çalışır</li>
       <li>Sağdaki döner düğmeyi çevirin ya da − / + kullanın</li>
@@ -926,6 +928,7 @@ const HTML_EN = {
 HTML_EN.keys = `<h4>Keyboard and mouse</h4><ul>
       <li><kbd>Space</kbd> freezes / resumes the waves</li>
       <li><kbd>F</kbd> full screen, <kbd>Esc</kbd> exit</li>
+      <li><kbd>L</kbd> hides / shows the event labels</li>
       <li>Click a setting knob, then change it with <kbd>↑</kbd> <kbd>↓</kbd> or <kbd>←</kbd> <kbd>→</kbd></li>
       <li>The mouse wheel or dragging up and down on a knob also works</li>
       <li>Turn the rotary dial on the right, or use − / +</li>
@@ -1729,6 +1732,15 @@ $('bPause').onclick = togglePause;
 const fsSeen = () => { store.set('fsSeen', true); ['bFs', 'bFs2'].forEach(id => $(id).classList.remove('fsNew')); };
 if (!store.get('fsSeen', false)) ['bFs', 'bFs2'].forEach(id => $(id).classList.add('fsNew'));
 $('bFs').onclick = () => { fsSeen(); toggleFs(); };
+// olay etiketleri: tuş, kutu ve L kısayolu aynı ayarı değiştirir; seçim hatırlanır
+function setMarks(on) {
+  $('cMarks').checked = on; store.set('marks', on);
+  $('skMarks').textContent = (LANG === 'en' ? 'Labels: ' : 'Etiketler: ') + (on ? (LANG === 'en' ? 'on' : 'açık') : (LANG === 'en' ? 'off' : 'kapalı')) + ' (L)';
+  $('skMarks').classList.toggle('on', !on);
+}
+$('skMarks').onclick = () => setMarks(!$('cMarks').checked);
+$('cMarks').onchange = e => setMarks(e.target.checked);
+setMarks(store.get('marks', true));
 $('bFs2').onclick = () => { fsSeen(); if (!$('vent').classList.contains('fs')) toggleFs(); };
 $('bFix').onclick = toggleFix;
 $('bIHold').onclick = () => hold('insp');
@@ -1781,6 +1793,7 @@ document.addEventListener('keydown', e => {
   if (/INPUT|SELECT|TEXTAREA/.test(ae.tagName) && ae.type !== 'range') return;
   if (e.code === 'Space') { e.preventDefault(); togglePause(); }
   else if (e.key === 'f' || e.key === 'F') { fsSeen(); toggleFs(); }
+  else if (e.key === 'l' || e.key === 'L') setMarks(!$('cMarks').checked);
   else if (e.key === 'Escape') { if ($('modeRow').classList.contains('on')) openModes(false); else if ($('vent').classList.contains('fs')) toggleFs(); else selectKnob(null); }
   else if (selKnob && (e.key === 'ArrowUp' || e.key === 'ArrowRight')) { e.preventDefault(); stepKnob(selKnob, 1); }
   else if (selKnob && (e.key === 'ArrowDown' || e.key === 'ArrowLeft')) { e.preventDefault(); stepKnob(selKnob, -1); }
@@ -1798,7 +1811,7 @@ function setLang(l) {
   buildScen(); buildPat(); knobSig = ''; refreshAll();
   $('bPause').textContent = T(sim && !running ? 'Devam et' : 'Dalgaları dondur');
   $('bFs').textContent = T($('vent').classList.contains('fs') ? 'Tam ekrandan çık' : 'Tam ekran');
-  updHdr();
+  updHdr(); setMarks($('cMarks').checked);
 }
 document.querySelectorAll('#lang button').forEach(b => b.onclick = () => setLang(b.dataset.l));
 localizeTables(); applyStatic();
