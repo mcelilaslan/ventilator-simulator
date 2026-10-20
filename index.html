@@ -145,7 +145,7 @@ label.chk{display:inline-flex;gap:5px;align-items:center;color:var(--muted);curs
 /* cihaz */
 .device{background:var(--bezel);border:1px solid var(--bezelLine);border-radius:22px;padding:6px 14px 10px;box-shadow:0 8px 30px rgba(0,0,0,.25)}
 .device .brand{text-align:center;font-weight:700;letter-spacing:2px;color:var(--bezelInk);font-size:12px;margin-bottom:4px;line-height:1.2}
-.dev{display:grid;grid-template-columns:1fr 132px;gap:14px}
+.dev{display:grid;grid-template-columns:minmax(0,1fr)}
 .screen{background:var(--scr);border:3px solid #1b232c;border-radius:6px;overflow:hidden;color:var(--scrInk);min-width:0;display:flex;flex-direction:column}
 .hdr{display:flex;align-items:stretch;background:var(--hdr);min-height:40px;color:#fff}
 .clock{padding:4px 10px;font-size:12px;opacity:.9;min-width:56px}
@@ -156,7 +156,7 @@ label.chk{display:inline-flex;gap:5px;align-items:center;color:var(--muted);curs
 .alarm span{background:#ffd400;color:#2a2000;font-weight:700;border-radius:3px;padding:2px 10px;font-size:13px;display:none}
 .alarm span.on{display:inline-block}
 .chat{align-self:center;margin-right:10px;border:1px solid rgba(255,255,255,.6);border-radius:4px;padding:1px 7px;font-size:12px;font-weight:650}
-.mid{display:grid;grid-template-columns:1fr 200px 118px;min-height:0;flex:1}
+.mid{display:grid;grid-template-columns:1fr 200px 124px;min-height:0;flex:1}
 .cv{position:relative;min-width:0;background:var(--screen)}
 canvas{display:block;width:100%;height:460px}
 .overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--scrMuted);font-size:15px;text-align:center;padding:20px;pointer-events:none}
@@ -199,14 +199,14 @@ canvas{display:block;width:100%;height:460px}
 .kn .kl{font-size:12px;font-weight:600;margin-top:1px;text-align:center;line-height:1.1}
 .kn .ku{font-size:10px;color:var(--scrMuted)}
 .kn.chg .kl::after{content:" •";color:var(--ok)}
-.hard{display:flex;flex-direction:column;align-items:center;gap:10px;padding-top:40px}
+.hard{display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:auto;padding-top:6px}
 .hk{width:100%;background:#d8dde3;color:#2b3440;border:1px solid #b9c1cb;border-radius:6px;padding:7px 4px;font-size:12px;cursor:pointer}
 :root:not([data-theme="light"]) .hk{background:#39424d;color:#d4dbe3;border-color:#4b5562}
-.rotary{width:108px;height:108px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#ffffff,#cfd6dd 60%,#aeb7c1);border:6px solid #d9ec8f;box-shadow:0 3px 10px rgba(0,0,0,.3);cursor:grab;position:relative;touch-action:none}
-.rotary .dot{position:absolute;width:10px;height:10px;border-radius:50%;background:#7f8a96;left:44px;top:10px;transform-origin:5px 38px}
+.rotary{box-sizing:border-box;width:84px;height:84px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#ffffff,#cfd6dd 60%,#aeb7c1);border:6px solid #d9ec8f;box-shadow:0 3px 10px rgba(0,0,0,.3);cursor:grab;position:relative;touch-action:none}
+.rotary .dot{position:absolute;width:9px;height:9px;border-radius:50%;background:#7f8a96;left:31.5px;top:6px;transform-origin:4.5px 30px}
 .rotBtns{display:flex;gap:8px}
-.rotBtns button{width:40px;height:32px;border-radius:6px;border:1px solid var(--bezelLine);background:var(--panel2);cursor:pointer;font-size:18px}
-.selInfo{font-size:11.5px;color:var(--bezelInk);text-align:center;min-height:30px}
+.rotBtns button{width:42px;height:28px;border-radius:5px;border:1px solid var(--softLine);background:var(--soft);color:var(--softInk);cursor:pointer;font-size:17px;line-height:1}
+.selInfo{font-size:11px;color:var(--scrInk);text-align:center;min-height:28px;line-height:1.25}
 .device.fs{position:fixed;inset:0;z-index:50;border-radius:0;overflow:auto}
 .device.fs canvas{height:calc(100vh - 290px) !important}
 
@@ -214,7 +214,7 @@ canvas{display:block;width:100%;height:460px}
   .mid{grid-template-rows:var(--cvH,460px)}
   .read,.soft{min-height:0;overflow:hidden}
   .device.fs .mid{grid-template-rows:auto}
-  .hard{padding-top:10px}
+
   /* alçak pencere: göstergeler, tuşlar ve düğmeler sıkışır */
   .vent-c .read{display:grid;grid-template-columns:1fr 1fr;align-content:start;gap:2px 10px;padding:4px 8px}
   .vent-c .smg{grid-column:1/-1;margin-top:2px;gap:0 8px}
@@ -232,10 +232,22 @@ canvas{display:block;width:100%;height:460px}
   .vent-c .kn .kv.s{font-size:10.5px}
   .vent-c .kn .kl{font-size:11px}
   .vent-c .kbHead span{display:none}
-  .vent-c .rotary{width:84px;height:84px}
-  .vent-c .rotary .dot{left:32px;top:7px;transform-origin:5px 30px}
+  .vent-c .rotary{width:70px;height:70px}
+  .vent-c .rotary .dot{left:24.5px;top:5px;transform-origin:4.5px 24px}
+  .vent-c .hard{gap:4px}
+  .vent-c .rotBtns button{height:24px}
   .vent-c .hdr{min-height:32px}
   .vent-c .modeBlk b{font-size:17px}
+  /* çok alçak pencere: döner düğme küçülür, −/+ yanına geçer */
+  .vent-xc .selInfo{display:none}
+  .vent-xc .hard{flex-direction:row;justify-content:center;gap:3px}
+  .vent-xc .rotBtns{display:contents}
+  .vent-xc #kMinus{order:0}.vent-xc .rotary{order:1}.vent-xc #kPlus{order:2}
+  .vent-xc .rotBtns button{width:24px;height:26px;font-size:15px;padding:0}
+  .vent-xc .rotary{width:52px;height:52px;border-width:4px}
+  .vent-xc .rotary .dot{width:8px;height:8px;left:18px;top:4px;transform-origin:4px 18px}
+  .vent-xc .sk{padding:3px 3px;font-size:11px}
+  .vent-xc .soft{gap:3px}
 }
 @media (max-width:1100px){.mid{grid-template-columns:1fr 180px 104px}}
 @media (max-width:860px){
@@ -246,10 +258,10 @@ canvas{display:block;width:100%;height:460px}
   .smg{grid-column:1/-1;grid-template-columns:repeat(4,1fr)}
   .soft{flex-direction:row;flex-wrap:wrap;border-left:0;border-top:1px solid var(--scrLine)}
   .sk{flex:1 1 30%}
-  .hard{flex-direction:row;flex-wrap:wrap;justify-content:center}
+  .hard{flex:1 1 100%;flex-direction:row;flex-wrap:wrap;justify-content:center;margin-top:4px}
   .hk{width:auto;flex:1 1 40%}
   .rotary{width:80px;height:80px}
-  .rotary .dot{left:30px;top:6px;transform-origin:5px 28px}
+  .rotary .dot{left:29.5px;top:6px;transform-origin:4.5px 28px}
   .modeBlk{min-width:0}
   .modeBlk b{font-size:16px}
   .modeBlk small,.chat,.kbHead span{display:none}
@@ -340,6 +352,11 @@ footer{margin-top:16px;color:var(--muted);font-size:12px}
             <button class="sk" id="skMarks"></button>
             <button class="sk" id="skDay" data-i="skD">Gündüz / Gece</button>
             <button class="sk fsk" id="bFs">Tam ekran</button>
+            <div class="hard">
+              <div class="rotary" id="rotary" title="Seçili ayarı çevirerek değiştirin" data-it><div class="dot" id="rotDot"></div></div>
+              <div class="rotBtns"><button id="kMinus" aria-label="Azalt" data-ia>−</button><button id="kPlus" aria-label="Artır" data-ia>+</button></div>
+              <div class="selInfo" id="selInfo">Ayar seçilmedi</div>
+            </div>
           </div>
         </div>
         <div class="modeRow" id="modeRow"></div>
@@ -347,11 +364,6 @@ footer{margin-top:16px;color:var(--muted);font-size:12px}
           <div class="kbHead"><b id="kbMode">--</b><span data-i="kbH">Düğmeyi seçin, sonra döner düğmeyle, fare tekerleğiyle, sürükleyerek ya da ok tuşlarıyla ayarlayın</span></div>
           <div class="knobs" id="knobs"></div>
         </div>
-      </div>
-      <div class="hard">
-        <div class="rotary" id="rotary" title="Seçili ayarı çevirerek değiştirin" data-it><div class="dot" id="rotDot"></div></div>
-        <div class="rotBtns"><button id="kMinus" aria-label="Azalt" data-ia>−</button><button id="kPlus" aria-label="Artır" data-ia>+</button></div>
-        <div class="selInfo" id="selInfo">Ayar seçilmedi</div>
       </div>
     </div>
   </section>
@@ -671,13 +683,13 @@ const SCEN = {
   },
   iie: {
     name: 'Etkisiz inspiratuvar efor', short: 'En sık asenkroni',
-    p: { mode: 'PSV', PEEP: 5, PS: 18, rise: 0.15, ETS: 15, trig: 3, C: 55, R: 20, maxTi: 2.5, pt: { rr: 28, pmax: 6, ti: 0.7, jitter: 0.1 } },
-    fix: { PS: 10, ETS: 40, trig: 2 }, fixText: 'PS 18→10, ETS %15→40, tetik 3→2 L/dk',
+    p: { mode: 'PSV', PEEP: 5, PS: 18, rise: 0.15, ETS: 15, trig: 3, C: 55, R: 15, maxTi: 2.5, pt: { rr: 24, pmax: 6, ti: 0.7, jitter: 0.1 } },
+    fix: { PS: 12, ETS: 40, trig: 2 }, fixText: 'PS 18→12, ETS %15→40, tetik 3→2 L/dk',
     marks: ['ETKİSİZ EFOR'],
     look: ['Ekspiryum sırasında akım eğrisinde ani azalma veya çentik, ardından soluk gelmez.', 'Basınç eğrisi neredeyse değişmez.', 'Ekspiryum sonu akım sıfıra inmeden yeni soluk başlar (auto-PEEP).', 'Ventilatörün gösterdiği frekans hastanın gerçek efor sayısından düşüktür.'],
     mech: "Efor alveol basıncını düşürür; ekspirasyonu süren basınç farkı azalır ve ekspiratuvar akım yavaşlar. Hava yolundaki gaz miktarı değişmediği için basınç eğrisi neredeyse değişmez. Efor auto-PEEP + tetik eşiğini aşamaz. Arka arkaya iki ekspiryum auto-PEEP'i kendiliğinden sınırlar. Etkisiz efor, eforun büyüklüğüyle değil destek düzeyiyle ilişkilidir: A/C ya da yüksek PS'de eforların 1/4–1/3'ü tetikleyemeyebilir.",
     causes: ["Ventilatör: yüksek destek (PS, Vt), uzun Ti ya da yüksek set frekans nedeniyle kısa ekspiryum süresi, yüksek tetik eşiği", "Hasta mekaniği: yüksek direnç, düşük elastans (yüksek kompliyans), auto-PEEP", "Düşük solunum dürtüsü, sedasyon"],
-    fixNote: "Daha kısa ve daha küçük soluk ekspiryuma zaman bırakır; eforların hepsi tetikler. Kalan gecikme bu hastadaki auto-PEEP'ten gelir: auto-PEEP'in altında kalan dış PEEP, tetik için gereken eforu da azaltır (Auto-PEEP ve dış PEEP senaryosu). Auto-PEEP varken tetiği daha duyarlı yapmak tek başına yetmez.",
+    fixNote: "Daha kısa ve daha küçük soluk ekspiryuma zaman bırakır; eforların hepsi tetikler. Kalan gecikme bu hastadaki auto-PEEP'ten gelir: auto-PEEP'in altında kalan dış PEEP, tetik için gereken eforu da azaltır (Auto-PEEP ve dış PEEP senaryosu). Auto-PEEP varken tetiği daha duyarlı yapmak tek başına yetmez. PS düşünce VT küçülür (yaklaşık 700 → 400 mL) ama boşa giden eforlar artık soluk aldığı için frekans artar (yaklaşık 16 → 24/dk); VE biraz azalır (yaklaşık 11.5 → 9.5 L/dk), çünkü önceki aşırı destek hastayı hiperventile ediyordu. PS'yi bir anda çok düşürmeyin: VT yaklaşık 6 mL/kg'ın altına inerse, frekans ve efor belirgin artarsa PS'yi 1–2 cmH₂O geri artırın.",
   },
   delay: {
     name: 'Gecikmeli tetikleme', short: 'Efor ile destek arası uzun',
@@ -691,13 +703,13 @@ const SCEN = {
   },
   auto: {
     name: 'Otomatik tetikleme', short: 'Efor olmadan soluk',
-    p: { mode: 'PSV', PEEP: 5, PS: 10, rise: 0.15, ETS: 25, trig: 0.5, C: 50, R: 10, cardiac: 0.045, hr: 110, refr: 0.6, pt: { rr: 8, pmax: 4, ti: 0.9 } },
+    p: { mode: 'PSV', PEEP: 5, PS: 10, rise: 0.15, ETS: 25, trig: 0.5, C: 50, R: 10, cardiac: 0.045, hr: 110, refr: 0.6, pt: { rr: 12, pmax: 4, ti: 0.9 } },
     fix: { trig: 3 }, fixText: 'Tetik 0.5→3 L/dk',
     marks: ['OTO'],
     look: ['Soluk başında basınçta düşüş yok: hasta çekmeden soluk geliyor.', 'Akım eğrisinde kalp atımıyla senkron küçük salınımlar.', 'Mor efor olmadan soluklar; toplam frekans hastanın eforundan çok yüksek.'],
     mech: "Ventilatör, hasta eforu dışındaki bir sinyali (kardiyak osilasyon, kaçak, devredeki su) efor sanar ve zorunlu soluk verir. Ventilatörün saydığı soluk sayısı hastanın gerçek solunum sayısından fazladır. Kalp atımı 4–6 L/dk'lık akım dalgalanması yapabilir; 2 L/dk gibi duyarlı bir akım tetiği bunu efor sayar.",
     causes: ["Ventilatör: tetik eşiği çok duyarlı; NIV'de kaçak kompanzasyonu", "Arayüz: kaçak, devrede su veya sekresyon, bronkoplevral fistül", "Hasta: kardiyak osilasyonlar"],
-    fixNote: 'Daha az duyarlı tetikle yalnızca gerçek eforlar soluk başlatır. Tetik, oto-tetikleme yapmayan en duyarlı değere ayarlanır. Gerçekte kaçağı ve devredeki suyu da kontrol edin.',
+    fixNote: 'Daha az duyarlı tetikle yalnızca gerçek eforlar soluk başlatır. Tetik, oto-tetikleme yapmayan en duyarlı değere ayarlanır. Gerçekte kaçağı ve devredeki suyu da kontrol edin. Düzeltince frekans hastanın gerçek frekansına iner ve VE düşer (burada yaklaşık 10 → 6 L/dk): oto-tetikleme düşük dürtüyü gizleyebilir. VE\'yi izleyin, gerekirse yedek (apne) frekansı ayarlayın.',
   },
   peepi: {
     name: 'Auto-PEEP ve dış PEEP', short: 'Akım kısıtlılığında tetiklemek',
@@ -742,22 +754,22 @@ const SCEN = {
   early: {
     name: 'Erken döngü', short: 'Soluk hastadan önce biter',
     p: { mode: 'PSV', PEEP: 5, PS: 10, rise: 0.1, ETS: 45, trig: 2, C: 30, R: 6, pt: { rr: 20, pmax: 6, ti: 1.0, jitter: 0.05 } },
-    fix: { ETS: 10, PS: 14 }, fixText: 'ETS %45→10, PS 10→14',
+    fix: { ETS: 10 }, fixText: 'ETS %45→10',
     marks: ['ERKEN DÖNGÜ', 'ÇİFT'],
     look: ['Tepe ekspiratuvar akımdan hemen sonra küçük çıkıntı ve ani geri dönüş.', 'Ti çok kısa, Vt küçük; mor efor soluk bittikten sonra da sürer.', 'Eforu biraz daha güçlü olan solukta (yaklaşık 3 solukta bir) çift tetiklemeye dönüşür: aynı olayın ağır hâli.'],
     mech: "Hastanın nöral inspiryumu ventilatörünkinden uzun. Hasta hâlâ çektiği için tepe ekspiratuvar akım kesilir. Kısa zaman sabitli (sert, ARDS benzeri) akciğerde akım hızla ETS eşiğine düşer. Hızlı rampa tepe akımı yükseltir; ETS sabit bir yüzde olduğu için soluk daha da erken biter.",
     causes: ["Ventilatör: ETS yüksek, PS düşük, çok hızlı rampa; zaman döngülüde kısa Ti", "Hasta: kısa zaman sabiti (ARDS)"],
-    fixNote: "ETS düşünce soluk hastanın eforu kadar sürer. ARDS'de ETS'nin %5 civarı en uygun olabilir; en düşük döngü eşiği solunum hızını azaltıp Vt'yi artırır.",
+    fixNote: "ETS düşünce soluk hastanın eforu kadar sürer. ARDS'de ETS'nin %5 civarı en uygun olabilir; en düşük döngü eşiği solunum hızını azaltıp Vt'yi artırır. Burada VT yaklaşık 260 → 450 mL olur, frekans 25 → 20/dk iner. PS'yi de artırmak VT'yi koruyucu sınırın üstüne çıkarabilir (bu hastada PS 14 ile yaklaşık 570 mL); ARDS'de VT ve Pplato izlenir.",
   },
   late: {
     name: 'Geç döngü', short: 'Soluk hastadan sonra biter',
     p: { mode: 'PSV', PEEP: 5, PS: 18, rise: 0.3, ETS: 5, trig: 2, C: 50, R: 15, maxTi: 3, etsLag: 0.28, pt: { rr: 16, pmax: 6, ti: 0.7, jitter: 0.05, expPush: 18 } },
-    fix: { ETS: 40, PS: 12, rise: 0.1 }, fixText: 'ETS %5→40, PS 18→12, rampa 0.3→0.1 s',
+    fix: { ETS: 40, PS: 12, rise: 0.1, etsLag: 0.04 }, fixText: 'ETS %5→40, PS 18→12, rampa 0.3→0.1 s',
     marks: ['GEÇ DÖNGÜ', 'BASINÇ ÇIKINTISI'],
     look: ["Akım işareti: inspiratuvar akımda hızlı düşüş, ardından yatık uzun kuyruk.", "Gecikme uzayınca hasta ekspiratuvar kaslarını kasar (mor iz negatif); inspiryum sonunda geniş, yuvarlak bir basınç çıkıntısı (T dalgası gibi) görülür; ventilatör çıkıntının iniş kolunda döngüye girer."],
     mech: "Hastanın inspiryumu bitmiş, hava yolu hâlâ basınçlı. Ekspiratuvar kaslar alveol basıncını yükseltir; bu basınç hava yolu basıncını geçince hasta devreye üfler ve hava yolu basıncı yükselir. Ventilatör nöral ekspiryuma taşınca engelsiz ekspiryum süresi kısalır, sonraki tetik için daha büyük efor gerekir ve dinamik hiperinflasyon artar. PSV'de akım ölçütünün yanında iki ikincil döngü ölçütü vardır: basınç (ayarın birkaç cmH₂O üstü) ve süre (maksimum Ti). VCV'de aktif ekspiryum basınç döngüsüne yol açar (bucking); Vt düşer, alarm çalar.",
     causes: ["Ventilatör: ETS çok düşük, PS çok yüksek, rampa çok uzun; PCV'de uzun Ti; VCV'de düşük akım, uzun Ti, yüksek Vt", "Hasta: uzun zaman sabiti (KOAH)", "NIV: kaçak inspiryumu uzatır (inspiratory hang-up)"],
-    fixNote: "Yüksek ETS ve düşük PS soluğu hastanın eforuyla birlikte bitirir; ekspiratuvar kas kasılması ve basınç çıkıntısı kaybolur. KOAH'ta ETS'yi tepe akımın %40–70'ine çıkarmak sinkroniyi düzeltir, eforu ve dinamik hiperinflasyonu azaltır. Bir başka yol PCV'ye geçip Ti'yi hastanınkine uydurmaktır.",
+    fixNote: "Yüksek ETS ve düşük PS soluğu hastanın eforuyla birlikte bitirir; ekspiratuvar kas kasılması ve basınç çıkıntısı kaybolur. KOAH'ta ETS'yi tepe akımın %40–70'ine çıkarmak sinkroniyi düzeltir, eforu ve dinamik hiperinflasyonu azaltır. Bir başka yol PCV'ye geçip Ti'yi hastanınkine uydurmaktır. Daha kısa soluk daha küçük VT demektir (yaklaşık 570 → 450 mL); VE de azalır, frekans ve efor izlenir.",
   },
   reverse: {
     name: 'Ters tetikleme (PCV)', short: 'Makine soluğu eforu tetikler',
@@ -782,12 +794,12 @@ const SCEN = {
   stack: {
     name: 'Hava hapsi (breath stacking)', short: 'Ekspiryum bitmeden yeni soluk',
     p: { mode: 'VCV', PEEP: 5, Vt: 0.5, Fset: 40, rate: 26, trig: 2, C: 60, R: 22 },
-    fix: { rate: 12, Fset: 60 }, fixText: 'f 26→12, akım 40→60 L/dk',
+    fix: { rate: 16, Fset: 60 }, fixText: 'f 26→16, akım 40→60 L/dk',
     marks: ['AKIM SIFIRA İNMEDİ'],
     look: ['Ekspiratuvar akım sıfıra dönmeden yeni soluk başlar: EKSP. BİTMEDİ işaretinde kesikli çizgi akımın inmesi gereken sıfır düzeyini, kalın çubuk o anda hâlâ akan ekspiratuvar akımı (sayı, L/dk) gösterir.', 'Ekspiratuvar tutma (Eksp. tut) yapın: PEEPtot ayarlanan PEEP\'ten yüksek çıkar, fark auto-PEEP\'tir.', 'Uzun zaman sabiti (τ = R×C) ve kısa ekspiryum süresi hava hapsini artırır.'],
     mech: "Ekspiryum sonunda alveolde gaz kalırsa (auto-PEEP) hastanın her eforu önce bu basıncı dengelemek zorundadır; bu, gecikmeli tetiklemenin ve etkisiz eforun ana hasta faktörüdür. Ekshalasyon valfinin geç açılması ya da ekspiryuma taşan inflasyon dinamik hiperinflasyonu artırır.",
     causes: ["Yüksek frekans, uzun Ti, yüksek Vt", "Hasta: uzun zaman sabiti (KOAH, bronkospazm)"],
-    fixNote: 'Daha düşük frekans ve daha yüksek akım ekspiryuma zaman bırakır. Düzeltmeden sonra Eksp. tut ile PEEPtot\'u tekrar ölçün.',
+    fixNote: 'Daha düşük frekans ve daha yüksek akım ekspiryuma zaman bırakır; auto-PEEP yaklaşık 4 → 1 cmH₂O iner. Ptepe akım arttığı için biraz yükselir (dirençsel basınç); Pplato düşer. VE yaklaşık 13 → 8 L/dk azalır: KOAH\'ta bu kabul edilen bir ödünleşimdir (permisif hiperkapni), pH ve PaCO₂ izlenir. Frekansı çok düşürmek VE\'yi gereğinden fazla azaltır. Düzeltmeden sonra Eksp. tut ile PEEPtot\'u tekrar ölçün.',
   },
 };
 
@@ -809,8 +821,8 @@ const SCEN_EN = {
     look: ['During expiration, a sudden decrease or notch in flow, not followed by a breath.', 'The pressure curve barely changes.', 'A new breath starts before expiratory flow reaches zero (auto-PEEP).', 'The rate shown by the ventilator is lower than the patient\'s true effort rate.'],
     mech: "The effort lowers alveolar pressure; the pressure gradient driving expiration falls and expiratory flow slows. The amount of gas in the airway does not change, so the pressure curve barely changes. The effort cannot overcome auto-PEEP plus the trigger threshold. Two consecutive expirations limit auto-PEEP by themselves. Ineffective efforts relate to the level of support, not to effort size: in A/C or high PS, 1/4–1/3 of efforts may fail to trigger.",
     causes: ["Ventilator: high support (PS, Vt), short expiratory time from long Ti or high set rate, high trigger threshold", "Patient mechanics: high resistance, low elastance (high compliance), auto-PEEP", "Low respiratory drive, sedation"],
-    fixText: 'PS 18→10, ETS 15→40%, trigger 3→2 L/min',
-    fixNote: "Shorter, smaller breaths leave time for expiration; every effort triggers. The remaining delay comes from this patient's auto-PEEP: external PEEP set below auto-PEEP also lowers the effort needed to trigger (see the Auto-PEEP and external PEEP scenario). With auto-PEEP, making the trigger more sensitive is not enough on its own.",
+    fixText: 'PS 18→12, ETS 15→40%, trigger 3→2 L/min',
+    fixNote: "Shorter, smaller breaths leave time for expiration; every effort triggers. The remaining delay comes from this patient's auto-PEEP: external PEEP set below auto-PEEP also lowers the effort needed to trigger (see the Auto-PEEP and external PEEP scenario). With auto-PEEP, making the trigger more sensitive is not enough on its own. When PS falls, VT gets smaller (about 700 → 400 mL) but the wasted efforts now get a breath, so the rate rises (about 16 → 24/min); VE falls a little (about 11.5 → 9.5 L/min) because the earlier over-assistance was hyperventilating the patient. Do not drop PS too far at once: if VT falls below about 6 mL/kg and rate and effort rise clearly, add back 1–2 cmH₂O of PS.",
   },
   delay: {
     name: 'Delayed triggering', short: 'Long gap between effort and support',
@@ -826,7 +838,7 @@ const SCEN_EN = {
     mech: "The ventilator mistakes a signal other than patient effort (cardiac oscillation, leak, water in the circuit) for an effort and delivers a breath. The breath count of the ventilator exceeds the patient's true respiratory rate. A heartbeat can cause 4–6 L/min flow oscillations; a sensitive flow trigger such as 2 L/min counts it as an effort.",
     causes: ["Ventilator: trigger too sensitive; leak compensation in NIV", "Interface: leak, water or secretions in the circuit, bronchopleural fistula", "Patient: cardiac oscillations"],
     fixText: 'Trigger 0.5→3 L/min',
-    fixNote: 'With a less sensitive trigger only real efforts start a breath. Set the trigger to the most sensitive value that does not auto-trigger. In practice also check for leaks and water in the circuit.',
+    fixNote: 'With a less sensitive trigger only real efforts start a breath. Set the trigger to the most sensitive value that does not auto-trigger. In practice also check for leaks and water in the circuit. Once fixed, the rate falls to the patient\'s true rate and VE drops (here about 10 → 6 L/min): auto-triggering can hide a low drive. Watch VE and set a backup (apnea) rate if needed.',
   },
   peepi: {
     name: 'Auto-PEEP and external PEEP', short: 'Triggering with flow limitation',
@@ -865,8 +877,8 @@ const SCEN_EN = {
     look: ['A small bump right after peak expiratory flow and a sudden reversal.', 'Ti very short, Vt small; the purple effort continues after the breath ends.', 'On breaths with a slightly stronger effort (about 1 in 3) it turns into double triggering: the severe form of the same event.'],
     mech: "The patient's neural inspiration is longer than the ventilator's. Because the patient is still pulling, peak expiratory flow is cut off. In a stiff lung with a short time constant (ARDS-like), flow falls quickly to the ETS threshold. A fast rise raises peak flow; since ETS is a fixed percentage, the breath ends even earlier.",
     causes: ["Ventilator: high ETS, low PS, very fast rise; short Ti in time-cycled modes", "Patient: short time constant (ARDS)"],
-    fixText: 'ETS 45→10%, PS 10→14',
-    fixNote: "With a lower ETS the breath lasts as long as the patient's effort. In ARDS an ETS around 5% may be optimal; the lowest cycling threshold lowers respiratory rate and raises Vt.",
+    fixText: 'ETS 45→10%',
+    fixNote: "With a lower ETS the breath lasts as long as the patient's effort. In ARDS an ETS around 5% may be optimal; the lowest cycling threshold lowers respiratory rate and raises Vt. Here VT goes from about 260 to 450 mL and the rate falls from 25 to 20/min. Raising PS as well can push VT above the protective range (about 570 mL with PS 14 in this patient); in ARDS watch VT and Pplat.",
   },
   late: {
     name: 'Delayed cycling', short: 'Breath ends after the patient',
@@ -874,7 +886,7 @@ const SCEN_EN = {
     mech: "The patient's inspiration has ended but the airway is still pressurized. Expiratory muscles raise alveolar pressure; once it exceeds airway pressure the patient blows into the circuit and airway pressure rises. When the ventilator spills over into neural expiration, unimpeded expiratory time shortens, the next trigger needs a bigger effort and dynamic hyperinflation increases. Besides the flow criterion, PSV has two secondary cycling criteria: pressure (a few cmH₂O above the setting) and time (maximum Ti). In VCV active expiration causes pressure cycling (bucking); Vt falls and alarms sound.",
     causes: ["Ventilator: ETS too low, PS too high, rise too slow; long Ti in PCV; low flow, long Ti, high Vt in VCV", "Patient: long time constant (COPD)", "NIV: leak prolongs inspiration (inspiratory hang-up)"],
     fixText: 'ETS 5→40%, PS 18→12, rise 0.3→0.1 s',
-    fixNote: "A higher ETS and lower PS end the breath together with the patient's effort; expiratory muscle contraction and the pressure bump disappear. In COPD raising ETS to 40–70% of peak flow improves synchrony and reduces effort and dynamic hyperinflation. Another option is switching to PCV and matching Ti to the patient's.",
+    fixNote: "A higher ETS and lower PS end the breath together with the patient's effort; expiratory muscle contraction and the pressure bump disappear. In COPD raising ETS to 40–70% of peak flow improves synchrony and reduces effort and dynamic hyperinflation. Another option is switching to PCV and matching Ti to the patient's. A shorter breath means a smaller VT (about 570 → 450 mL); VE falls too, so watch rate and effort.",
   },
   reverse: {
     name: 'Reverse triggering (PCV)', short: 'Machine breath triggers effort',
@@ -897,8 +909,8 @@ const SCEN_EN = {
     look: ['A new breath starts before expiratory flow returns to zero: at the EXP. UNFINISHED mark the dashed line shows the zero level flow should reach and the thick bar the expiratory flow still running at that moment (number, L/min).', 'Do an expiratory hold (Exp. hold): PEEPtot is higher than set PEEP; the difference is auto-PEEP.', 'A long time constant (τ = R×C) and short expiratory time increase air trapping.'],
     mech: "If gas remains in the alveoli at end-expiration (auto-PEEP), every patient effort must first offset this pressure; it is the main patient factor in delayed triggering and ineffective efforts. Late opening of the exhalation valve or inflation spilling into expiration increases dynamic hyperinflation.",
     causes: ["High rate, long Ti, high Vt", "Patient: long time constant (COPD, bronchospasm)"],
-    fixText: 'f 26→12, flow 40→60 L/min',
-    fixNote: 'A lower rate and higher flow leave time for expiration. Re-measure PEEPtot with Exp. hold after the change.',
+    fixText: 'f 26→16, flow 40→60 L/min',
+    fixNote: 'A lower rate and higher flow leave time for expiration; auto-PEEP falls from about 4 to 1 cmH₂O. Ppeak rises a little because flow is higher (resistive pressure); Pplat falls. VE falls from about 13 to 8 L/min: in COPD this is an accepted trade-off (permissive hypercapnia); follow pH and PaCO₂. Dropping the rate too far cuts VE more than needed. Re-measure PEEPtot with Exp. hold after the change.',
   },
 };
 
@@ -1427,7 +1439,7 @@ function renderInfo() {
   if (s.causes) h += `<div class="card"><h3>${L('Nedenler', 'Causes')}</h3><ul>${sx(k, 'causes').map(x => '<li>' + x + '</li>').join('')}</ul></div>`;
   const tips = STIPS[LANG === 'en' ? 'en' : 'tr'][k] || [];
   h += `<div class="card"><h3>${L('Bu senaryo için ayar püf noktaları', 'Setting tips for this scenario')}</h3><ul>${tips.map(x => '<li>' + x + '</li>').join('')}</ul><details><summary>${L('Genel ilkeler', 'General principles')}</summary><ul>${LANG === 'en' ? GEN_EN : GEN_TR}</ul></details></div>`;
-  if (s.fix) h += `<div class="card"><h3>${L('Düzeltme denemesi', 'Try the fix')}</h3><p><b>${sx(k, 'fixText')}</b></p><p>${sx(k, 'fixNote')}</p><p style="color:var(--muted)">${L('Üstteki <b>Ayarı düzelt</b> düğmesiyle uygulayın; dalga formu kesintisiz akmaya devam eder.', 'Apply it with the <b>Fix settings</b> button above; the waveforms keep sweeping without interruption.')}</p></div>`;
+  if (s.fix) h += `<div class="card"><h3>${L('Düzeltme denemesi', 'Try the fix')}</h3><p><b>${sx(k, 'fixText')}</b></p><p>${sx(k, 'fixNote')}</p><p style="color:var(--muted)">${L('Üstteki <b>Ayarı düzelt</b> düğmesiyle uygulayın; dalga formu kesintisiz akmaya devam eder. Rakamlar bu sanal hasta için örnek değerlerdir; gerçek hastada ayar, VT, VE ve hastanın yanıtı izlenerek adım adım yapılır.', 'Apply it with the <b>Fix settings</b> button above; the waveforms keep sweeping without interruption. The numbers are example values for this virtual patient; in a real patient adjust step by step while watching VT, VE and the patient\'s response.')}</p></div>`;
   $('info').innerHTML = h;
 }
 
@@ -1695,18 +1707,22 @@ function updNums() {
   $('nTrg').parentElement.classList.toggle('alert', te0 >= 4);
   if (isPR(P)) updKHint();
   $('nVt').textContent = Math.round(Math.max(0, last.Vte) * 1000);
-  const starts = sim.breaths.map(b => b.start).filter(t => t > sim.t - 30);
-  let rr = 0;
-  if (starts.length >= 2) rr = (starts.length - 1) / (starts[starts.length - 1] - starts[0]) * 60;
+  // son 6 soluk (en fazla 30 s): ayar değişince eski soluklarla karışmadan birkaç solukta oturur
+  const rb = sim.breaths.filter(b => b.start > sim.t - 30).slice(-7);
+  const starts = rb.map(b => b.start);
+  let rr = 0, veL = 0;
+  if (starts.length >= 2) {
+    const span = starts[starts.length - 1] - starts[0];
+    rr = (starts.length - 1) / span * 60;
+    veL = rb.slice(0, -1).reduce((a, b) => a + Math.max(0, b.Vte), 0) / span * 60;
+  }
   $('nRR').textContent = rr ? rr.toFixed(0) : '--';
   const ef = sim.efforts.map(e => e.start).filter(t => t > sim.t - 30 && t < sim.t);
   let er = 0;
   if (ef.length >= 2) er = (ef.length - 1) / (ef[ef.length - 1] - ef[0]) * 60;
   $('nEff').textContent = ef.length >= 2 ? er.toFixed(0) : '0';
   $('nEff').parentElement.classList.toggle('alert', ef.length >= 2 && rr > 0 && Math.abs(er - rr) > 3);
-  const recent = done.slice(-4);
-  const vte = recent.reduce((a, b) => a + Math.max(0, b.Vte), 0) / recent.length;
-  $('nMV').textContent = rr ? (vte * rr).toFixed(1) : '--';
+  $('nMV').textContent = rr ? veL.toFixed(1) : '--';
   $('nTi').textContent = (last.ti || 0).toFixed(2);
   const te = last.end - last.start - (last.ti || 0);
   $('nIE').textContent = te > 0 ? '1:' + (te / last.ti).toFixed(1) : '--';
@@ -1795,7 +1811,7 @@ function setTheme(t) {
 }
 function setSize(v, keep) {
   cv.style.height = v + 'px'; $('vent').style.setProperty('--cvH', v + 'px');
-  $('vent').classList.toggle('vent-c', v < 490);
+  $('vent').classList.toggle('vent-c', v < 490); $('vent').classList.toggle('vent-xc', v < 380);
   $('rSize').value = v; $('vSize').textContent = v + ' px'; if (!keep) store.set('size', v); resize(); syncSide();
 }
 // pencereye sığdır: cihazın alt kenarı, sayfa en üstteyken görünür alanın içinde kalsın
@@ -1810,6 +1826,9 @@ function fit() {
     if (Math.abs(v - cur) < 2) break;
     setSize(v, true);
   }
+  // tuş sütunu sığmıyorsa ekranı o kadar uzat (çok alçak pencerede sayfa biraz kayar)
+  const sf = document.querySelector('.soft'), ov = sf.scrollHeight - sf.clientHeight;
+  if (ov > 0) setSize(Math.min(900, (parseFloat(cv.style.height) || 460) + ov), true);
   fitBusy = false;
 }
 function setFold(id, open) {
