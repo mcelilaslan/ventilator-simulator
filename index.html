@@ -7,6 +7,7 @@
 <meta name="description" content="Canlı akan mekanik ventilatör ekranı: ayarlanabilir ventilatör ve hasta, normal soluk ve hasta-ventilatör asenkronisi tipleri (eğitim amaçlı). Live mechanical ventilator screen with patient-ventilator asynchrony scenarios (educational).">
 <style>
 :root{
+  --other:#5b6b80;
   --bg:#0b0f14; --panel:#121821; --panel2:#18202b; --line:#253041; --text:#e6edf3; --muted:#8b98a8;
   --accent:#38bdf8; --sel:#0c2a3a; --warn:#f97316; --ok:#22c55e; --okBg:#14532d; --okInk:#dcfce7; --warnBg:#431407; --warnInk:#ffedd5;
   /* cihaz */
@@ -1013,7 +1014,7 @@ let W = 0, H = 0, dpr = 1, cols = null, lastCol = -1, ppCol = null;
 let COL = {};
 function readColors() {
   const cs = getComputedStyle(document.documentElement);
-  for (const k of ['--paw', '--flow', '--vol', '--pmus', '--screen', '--grid', '--zero', '--tick', '--accent', '--timeTri', '--warn']) COL[k] = cs.getPropertyValue(k).trim();
+  for (const k of ['--paw', '--flow', '--vol', '--pmus', '--screen', '--grid', '--zero', '--tick', '--accent', '--timeTri', '--warn', '--other']) COL[k] = cs.getPropertyValue(k).trim();
 }
 
 const isV = p => p.mode === 'VCV', isPC = p => p.mode === 'PCV', isPR = p => p.mode === 'PRVC', isPS = p => p.mode === 'PSV';
@@ -1215,8 +1216,8 @@ function buildPat() {
     if (c.sep) { d = document.createElement('span'); d.className = 'sep'; }
     else if (c.preset) {
       d = document.createElement('div'); d.className = 'mini w';
-      d.innerHTML = `<div class="lab"><span>${c.label}</span></div><div class="seg">${PRESETS.map((o, i) => `<button data-i="${i}" title="${o[2]}">${o[0]}</button>`).join('')}</div>`;
-      d.querySelectorAll('button').forEach(b => b.onclick = () => applyPreset(PRESETS[+b.dataset.i][1]));
+      d.innerHTML = `<div class="lab"><span>${c.label}</span></div><div class="seg"><button data-i="-1" title="${L('Bu senaryonun kendi hastası', 'The patient this scenario was built for')}">${L('Senaryo', 'Scenario')}</button>${PRESETS.map((o, i) => `<button data-i="${i}" title="${o[2]}">${o[0]}</button>`).join('')}</div>`;
+      d.querySelectorAll('button').forEach(b => b.onclick = () => applyPreset(+b.dataset.i < 0 ? scenPat() : PRESETS[+b.dataset.i][1]));
     }
     else if (c.hint) { d = document.createElement('span'); d.className = 'hintI'; }
     else if (c.seg) {
@@ -1233,6 +1234,17 @@ function buildPat() {
   }
 }
 
+// senaryonun kendi hasta mekaniği (hazır hasta seçildikten sonra geri dönmek için)
+const MECH = ['C', 'R', 'Rexp', 'Pcrit'];
+function scenPat() { const q = SCEN[curKey] ? scenParams() : P; const o = {}; for (const k of MECH) o[k] = q[k] || (k === 'Rexp' ? 1 : 0); return o; }
+// hasta (mekanik, efor, sürüklenme, kalp) senaryodakinden farklı mı?
+const PATKEYS = ['C', 'R', 'Rexp', 'Pcrit', 'pt', 'reverse', 'cardiac', 'hr'];
+let patMod = false, patModT = 0, misShown = false, patSig = '';
+function updPatMod() {
+  const sig = JSON.stringify(PATKEYS.map(k => P[k]));
+  patMod = !SCEN[curKey] || PATKEYS.some(k => JSON.stringify(P[k]) !== JSON.stringify(scenParams()[k]));
+  if (sig !== patSig) { patSig = sig; patModT = sim ? sim.t : 0; misShown = false; }
+}
 function applyPreset(m) {
   Object.assign(P, m);
   if (!sim) { startCustom(P, 'Özel ayar'); return; }
@@ -1258,7 +1270,7 @@ function syncControls() {
     c.el.style.display = vis ? '' : 'none';
     if (!vis) continue;
     if (c.hint) { c.el.textContent = c.hint(P); continue; }
-    if (c.preset) { c.el.querySelectorAll('button').forEach(b => { const m = PRESETS[+b.dataset.i][1]; b.classList.toggle('on', m.C === P.C && m.R === P.R && m.Rexp === P.Rexp && m.Pcrit === (P.Pcrit || 0)); }); continue; }
+    if (c.preset) { c.el.querySelectorAll('button').forEach(b => { const i = +b.dataset.i; if (i < 0) b.style.display = SCEN[curKey] ? '' : 'none'; const m = i < 0 ? scenPat() : PRESETS[i][1]; b.classList.toggle('on', m.C === P.C && m.R === P.R && m.Rexp === (P.Rexp || 1) && m.Pcrit === (P.Pcrit || 0)); }); continue; }
     if (!c.key) continue;
     const v = get(P, c.key);
     const shown = c.scale ? Math.round(v * c.scale * 100) / 100 : v;
@@ -1280,6 +1292,7 @@ function syncControls() {
     c.el.classList.toggle('chg', !!base && JSON.stringify(get(base, c.key)) !== JSON.stringify(get(P, c.key)));
   }
   updKHint();
+  updPatMod();
   $('patSum').textContent = patSummary();
   $('selInfo').innerHTML = selKnob ? `<b>${selKnob.label}</b><br>${fmtKnob(selKnob, selKnob.opts ? get(P, selKnob.key) : knobVal(selKnob))} ${selKnob.unit || ''}` : T('Ayar seçilmedi');
   $('nFio').textContent = P.FiO2;
@@ -1479,10 +1492,12 @@ function draw() {
     ctx.beginPath(); ctx.moveTo(x, lp.y1 - 9); ctx.lineTo(x - 5, lp.y1); ctx.lineTo(x + 5, lp.y1); ctx.fill();
   }
   const s = SCEN[curKey];
-  if ($('cMarks').checked && s) {
-    const placed = [];
+  if ($('cMarks').checked) {
+    const placed = [], main = s ? s.marks : [];
     for (const e of sim.events) {
-      if (!s.marks.includes(e.type) || !visible(e.t)) continue;
+      const own = main.includes(e.type);
+      if ((!own && !patMod) || !visible(e.t)) continue;
+      const ec = own ? COL['--warn'] : COL['--other'];
       const ln = laneOf(e.ch) || laneOf('flow');
       const x = LEFT + colOf(e.t);
       ctx.font = '600 11px system-ui,sans-serif';
@@ -1492,14 +1507,14 @@ function draw() {
       while (placed.some(q => q.ln === ln && q.row === row && bx < q.x2 + 4 && bx + w > q.x1 - 4)) row++;
       placed.push({ ln, row, x1: bx, x2: bx + w });
       const y = ln.y0 + 4 + row * 18;
-      ctx.fillStyle = COL['--warn'];
+      ctx.fillStyle = ec;
       roundRect(bx, y, w, 16, 4); ctx.fill();
       ctx.fillStyle = '#fff'; ctx.textAlign = 'left'; ctx.fillText(lab, bx + 5, y + 12);
-      ctx.strokeStyle = COL['--warn']; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+      ctx.strokeStyle = ec; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
       ctx.beginPath(); ctx.moveTo(x + .5, y + 16); ctx.lineTo(x + .5, ln.y1); ctx.stroke(); ctx.setLineDash([]);
       if (e.t2 && visible(e.t2)) {
         const x2 = LEFT + colOf(e.t2);
-        if (x2 > x) { ctx.strokeStyle = COL['--warn']; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x, ln.y1 - 3); ctx.lineTo(x2, ln.y1 - 3); ctx.stroke(); }
+        if (x2 > x) { ctx.strokeStyle = ec; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x, ln.y1 - 3); ctx.lineTo(x2, ln.y1 - 3); ctx.stroke(); }
       }
     }
   }
@@ -1516,9 +1531,25 @@ function roundRect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.a
 function clearNums() { ['nPpk', 'nPpl', 'nPeep', 'nDP', 'nVt', 'nRR', 'nEff', 'nMV', 'nTi', 'nIE', 'nCst', 'nTrg'].forEach(id => $(id).textContent = '--'); }
 let lastNumT = 0, lastBannerT = { i: -1, e: -1 }, bannerTimer = null;
 function peepTot() { const e = sim.meas.ehold; return e && sim.t - e.t < 60 ? e.peepTot : P.PEEP; }
+// hasta değiştirilince senaryonun beklenen olayı kaybolursa nedenini söyle
+function checkMismatch() {
+  const s = SCEN[curKey];
+  if (!s || !patMod || misShown || !s.marks.length || sim.t - patModT < 14) return;
+  const rec = sim.events.filter(e => e.t > sim.t - 12);
+  if (rec.some(e => s.marks.includes(e.type))) { misShown = true; return; }
+  misShown = true;
+  const cnt = {}; rec.forEach(e => { cnt[e.type] = (cnt[e.type] || 0) + 1; });
+  const seen = Object.keys(cnt).map(k => `${T(k)} ×${cnt[k]}`).join(', ');
+  const exp = s.marks.map(T).join(' / ');
+  const pi = sim.curBreath ? sim.curBreath.peepi : 0, tau = P.C * P.R / 1000;
+  let why;
+  if (pi >= 3) why = L(`Auto-PEEP yüksek (${pi.toFixed(1)} cmH₂O): hastanın eforu önce onu yenmek zorunda, ancak kalan kısmı soluk tetikleyebilir.`, `Auto-PEEP is high (${pi.toFixed(1)} cmH₂O): the patient's effort must overcome it first, and only what is left can trigger a breath.`);
+  else why = L(`Hasta mekaniği değişti (τ ${tau.toFixed(2)} s); bu senaryonun koşulu bu akciğerde oluşmuyor.`, `Patient mechanics changed (τ ${tau.toFixed(2)} s); this scenario's condition does not arise in this lung.`);
+  showBanner(`<b>${L('Bu hastada', 'In this patient')} ${exp} ${L('görülmüyor.', 'does not occur.')}</b> ${why} ${seen ? L('Bunun yerine görülen: ', 'Seen instead: ') + seen + '.' : ''} <span style="color:var(--scrMuted)">${L('Senaryonun hastasına dönmek için Hazır hasta → Senaryo.', 'To go back, choose Preset patient → Scenario.')}</span>`);
+}
 function updNums() {
   if (sim.t - lastNumT < 0.25) return; lastNumT = sim.t;
-  checkHolds();
+  checkHolds(); checkMismatch();
   const done = sim.breaths.filter(b => b.end != null);
   if (!done.length) return;
   const last = done[done.length - 1];
@@ -1610,8 +1641,8 @@ function updHdr() {
   if (sim) {
     if (sim.holdReq === 'insp' || sim.holdReq === 'exp' || sim.phase === 'ehold' || (sim.phase === 'pause' && sim.pauseHold)) msg = T('Tutma manevrası');
     const s = SCEN[curKey];
-    if (s && !msg) {
-      const ev = sim.events.filter(e => s.marks.includes(e.type) && sim.t - e.t < 3 && sim.t >= e.t).pop();
+    if ((s || patMod) && !msg) {
+      const ev = sim.events.filter(e => (patMod || s.marks.includes(e.type)) && sim.t - e.t < 3 && sim.t >= e.t).pop();
       if (ev) msg = '⚠ ' + T(ev.type);
     }
   }
