@@ -40,6 +40,30 @@ header{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:6
 header h1{font-size:18px;margin:0;font-weight:650}
 header .sub{color:var(--muted);font-size:13px}
 header #lang{margin-left:auto;align-self:center}
+header{align-items:center}
+.scenBtn{display:inline-flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--accent);border-radius:9px;padding:5px 12px;cursor:pointer;max-width:100%;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.scenBtn:hover{background:var(--sel)}
+.scenBtn .sl{font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);font-weight:650}
+.scenBtn b{font-size:14.5px;color:var(--accent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.scenBtn i{font-style:normal;color:var(--accent)}
+.scenBtn.empty{animation:glow 1.8s ease-in-out infinite}
+.smodal{position:fixed;inset:0;z-index:100;background:rgba(5,10,16,.45);display:flex;align-items:flex-start;justify-content:center;padding:56px 16px 16px;opacity:0;visibility:hidden;transition:opacity .18s,visibility .18s}
+.smodal.on{opacity:1;visibility:visible}
+.smPanel{background:var(--panel);border:1px solid var(--line);border-top:4px solid var(--accent);border-radius:12px;box-shadow:0 20px 50px rgba(0,0,0,.35);width:min(1100px,100%);max-height:calc(100vh - 80px);overflow:auto;padding:12px 16px 16px;transform:translateY(-12px) scale(.98);transition:transform .18s}
+.smodal.on .smPanel{transform:none}
+.smHead{display:flex;align-items:baseline;gap:12px;margin-bottom:10px;flex-wrap:wrap;position:relative;padding-right:40px}
+.smHead b{font-size:16px}
+.smX{position:absolute;right:0;top:-2px;background:transparent;border:0;font-size:18px;color:var(--muted);cursor:pointer;padding:0 6px}
+.smBody{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+.sgrp h4{margin:0 0 6px;font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted)}
+.sgrp{display:flex;flex-direction:column;gap:6px}
+.chip.sc{display:flex;flex-direction:column;align-items:flex-start;border-radius:9px;padding:7px 10px;text-align:left;white-space:normal}
+.chip.sc b{font-weight:600;font-size:13px}
+.chip.sc small{color:var(--muted);font-size:11.5px;margin-top:1px}
+.chip.sc.on small{color:inherit}
+.chip.sc .x{position:absolute;right:8px;top:6px}
+.chip.sc{position:relative}
+@media (min-width:1200px){.top{display:none}}
 
 /* üst satırlar */
 .top{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:2px 10px;margin-bottom:8px}
@@ -252,14 +276,20 @@ footer{margin-top:16px;color:var(--muted);font-size:12px}
 </head>
 <body>
 <div class="app">
+  <div class="smodal" id="scenModal" role="dialog" aria-modal="true" aria-labelledby="smTitle">
+    <div class="smPanel">
+      <div class="smHead"><b id="smTitle" data-i="smT">Senaryo seçin</b><span class="hintI" data-i="smH">Asenkroni tipine tıklayın; dalgalar hemen akmaya başlar.</span><button class="smX" id="smClose" aria-label="Kapat" data-ia>✕</button></div>
+      <div class="smBody" id="scenRow"></div>
+    </div>
+  </div>
   <header>
     <h1 data-i="h1">MV Asenkroni Simülatörü</h1>
+    <button class="scenBtn" id="scenBtn" aria-haspopup="dialog"><span class="sl" data-i="sL">Senaryo</span><b id="scenName"></b><i>▾</i></button>
     <span class="sub" data-i="sub">Canlı akan ventilatör ekranı · ayarlanabilir ventilatör ve hasta</span>
     <div class="seg" id="lang" title="Dil / Language"><button data-l="tr">TR</button><button data-l="en">EN</button></div>
   </header>
 
   <section class="top">
-    <div class="row"><span class="rowlab" data-i="rSenaryo">Senaryo</span><div class="chips" id="scenRow"></div></div>
     <div class="row bar" id="foldBar">
       <button class="tgl" id="tPat"><span data-i="tP">Hasta ayarları</span> <i>▸</i></button>
       <button class="tgl" id="tView"><span data-i="tV">Görünüm ve kayıt</span> <i>▸</i></button>
@@ -281,7 +311,7 @@ footer{margin-top:16px;color:var(--muted);font-size:12px}
         <div class="mid">
           <div class="cv">
             <canvas id="cv"></canvas>
-            <div class="overlay" id="overlay" data-i="ov">Üstten bir senaryo seçin; dalga formları akmaya başlasın.</div>
+            <div class="overlay" id="overlay" data-i="ov">Başlamak için yukarıdaki Senaryo düğmesine basın (kısayol S).</div>
             <div class="banner" id="banner"></div>
             <div class="frozen" id="frozen" data-i="fr">DONDURULDU</div>
           </div>
@@ -346,6 +376,7 @@ footer{margin-top:16px;color:var(--muted);font-size:12px}
     </div></div>
     <div class="sec keys" data-i="keys"><h4>Klavye ve fare</h4><ul>
       <li><kbd>Boşluk</kbd> dalgaları dondurur / devam ettirir</li>
+      <li><kbd>S</kbd> senaryo penceresini açar</li>
       <li><kbd>F</kbd> tam ekran, <kbd>Esc</kbd> çıkış</li>
       <li><kbd>L</kbd> olay etiketlerini gizler / gösterir</li>
       <li>Bir ayar düğmesine tıklayın, sonra <kbd>↑</kbd> <kbd>↓</kbd> ya da <kbd>←</kbd> <kbd>→</kbd> ile değiştirin</li>
@@ -359,7 +390,7 @@ footer{margin-top:16px;color:var(--muted);font-size:12px}
   <section class="info" id="info">
     <div class="card" style="grid-column:1/-1" data-i="howto">
       <p class="title">Nasıl kullanılır?</p>
-      <p>Üst satırdan bir senaryo seçin; ekran gerçek bir ventilatör gibi soldan sağa tarar. Ventilatör ayarları ekranın altındaki yuvarlak düğmelerdedir: bir düğmeye tıklayın (sarı halka), sonra sağdaki döner düğmeyi çevirin ya da fare tekerleği, sürükleme veya ok tuşlarıyla değiştirin. Modu turuncu kutudan ya da <b>Ventilasyon modu…</b> tuşundan değiştirin. Hasta mekaniği ve eforu sağdaki <b>Hasta</b> bölümündedir (dar ekranda üstteki <b>Hasta ayarları</b> düğmesinde); klavye kısayolları da orada yazar. Mor iz hastanın kas eforudur (Pmus); gerçek ventilatörde görünmez, öğretim için gösterilir.</p>
+      <p>Üstteki <b>Senaryo</b> düğmesine basıp (kısayol S) bir asenkroni tipi seçin; ekran gerçek bir ventilatör gibi soldan sağa tarar. Ventilatör ayarları ekranın altındaki yuvarlak düğmelerdedir: bir düğmeye tıklayın (sarı halka), sonra sağdaki döner düğmeyi çevirin ya da fare tekerleği, sürükleme veya ok tuşlarıyla değiştirin. Modu turuncu kutudan ya da <b>Ventilasyon modu…</b> tuşundan değiştirin. Hasta mekaniği ve eforu sağdaki <b>Hasta</b> bölümündedir (dar ekranda üstteki <b>Hasta ayarları</b> düğmesinde); klavye kısayolları da orada yazar. Mor iz hastanın kas eforudur (Pmus); gerçek ventilatörde görünmez, öğretim için gösterilir.</p>
       <div class="legend"><span><i style="background:var(--paw)"></i>Basınç (Paw)</span><span><i style="background:var(--flow)"></i>Akım</span><span><i style="background:var(--vol)"></i>Hacim</span><span><i style="background:var(--pmus)"></i>Hasta eforu (Pmus)</span><span>▲ mor: hasta tetikledi · ▲ gri: zaman tetiklemeli</span><span>Kesikli mor çizgi (VKV): pasif hastada olacak basınç; aradaki gölge hastanın işi</span><span>Boşluk: dondur · F: tam ekran</span></div>
     </div>
   </section>
@@ -880,7 +911,7 @@ const EN = {
   'Pmus izi': 'Pmus trace', 'Olay işaretleri': 'Event marks', 'Dalga yüksekliği': 'Wave height', 'Hasta ayarları': 'Patient settings', 'Görünüm ve kayıt': 'View & presets', 'Zaman penceresi': 'Time window',
   'Ayar adı': 'Preset name', 'Ayarı kaydet': 'Save preset', 'Sıfırla': 'Reset', 'Ayarı düzelt': 'Fix settings',
   'Ventilasyon modunu değiştir': 'Change ventilation mode', 'Chatburn mod sınıflaması': 'Chatburn mode classification',
-  'Üstten bir senaryo seçin; dalga formları akmaya başlasın.': 'Pick a scenario above and the waveforms start sweeping.',
+  'Başlamak için yukarıdaki Senaryo düğmesine basın (kısayol S).': 'Press the Scenario button above to start (shortcut S).', 'Senaryo seçin': 'Choose a scenario', 'Asenkroni tipine tıklayın; dalgalar hemen akmaya başlar.': 'Click an asynchrony type; the waveforms start sweeping right away.',
   'MV-SİM 300': 'MV-SIM 300', 'Otomatik eksen': 'Auto-scale axes', 'Tam ekranda izle': 'Watch full screen', 'Ayarları bitirince tam ekrana geçin (kısayol <kbd>F</kbd>)': 'When your settings are done, switch to full screen (shortcut <kbd>F</kbd>)', 'Ekrana sığdır': 'Fit to window', 'DONDURULDU': 'FROZEN', 'BEKLEMEDE': 'STANDBY',
   'Ptepe': 'Ppeak', 'Pplato': 'Pplat', 'ΔP sürüş': 'Driving ΔP', 'Hasta eforu*': 'Effort rate*', 'Tetik eforu*': 'Trigger effort*',
   'Tetik için gereken kas basıncı: PEEPi + tetik eşiği': 'Muscle pressure needed to trigger: PEEPi + trigger threshold',
@@ -917,7 +948,7 @@ const EN = {
 // uzun statik bloklar
 const HTML_EN = {
   howto: `<p class="title">How to use</p>
-      <p>Pick a scenario in the top row; the screen sweeps left to right like a real ventilator. Ventilator settings are the round knobs at the bottom of the screen: click a knob (yellow ring), then turn the rotary dial on the right, or use the mouse wheel, dragging or the arrow keys. Change the mode from the orange box or the <b>Ventilation mode…</b> key. Patient mechanics and effort are in the <b>Patient</b> section on the right (on narrow screens, the <b>Patient settings</b> button above); keyboard shortcuts are listed there too. The purple trace is the patient's muscle effort (Pmus); a real ventilator does not show it, it is shown for teaching.</p>
+      <p>Press the <b>Scenario</b> button at the top (shortcut S) and pick an asynchrony type; the screen sweeps left to right like a real ventilator. Ventilator settings are the round knobs at the bottom of the screen: click a knob (yellow ring), then turn the rotary dial on the right, or use the mouse wheel, dragging or the arrow keys. Change the mode from the orange box or the <b>Ventilation mode…</b> key. Patient mechanics and effort are in the <b>Patient</b> section on the right (on narrow screens, the <b>Patient settings</b> button above); keyboard shortcuts are listed there too. The purple trace is the patient's muscle effort (Pmus); a real ventilator does not show it, it is shown for teaching.</p>
       <div class="legend"><span><i style="background:var(--paw)"></i>Pressure (Paw)</span><span><i style="background:var(--flow)"></i>Flow</span><span><i style="background:var(--vol)"></i>Volume</span><span><i style="background:var(--pmus)"></i>Patient effort (Pmus)</span><span>▲ purple: patient-triggered · ▲ grey: time-triggered</span><span>Dashed purple line (VCV): pressure of a passive patient; the shaded gap is the patient's work</span><span>Space: freeze · F: full screen</span></div>`,
   foot: `<p style="margin:0 0 6px">For education only, not for clinical decisions. The screen layout is inspired by ICU ventilators; it is not any manufacturer's product. Model: single-compartment equation of motion (Paw = Flow×R + Volume×E + PEEP − Pmus) plus patient muscle pressure; gas exchange is not modelled (FiO₂ is display only). Values marked * come from the model; a real ventilator does not measure them directly.</p>
     <p style="margin:0 0 2px"><b>References</b></p>
@@ -930,6 +961,7 @@ const HTML_EN = {
 };
 HTML_EN.keys = `<h4>Keyboard and mouse</h4><ul>
       <li><kbd>Space</kbd> freezes / resumes the waves</li>
+      <li><kbd>S</kbd> opens the scenario window</li>
       <li><kbd>F</kbd> full screen, <kbd>Esc</kbd> exit</li>
       <li><kbd>L</kbd> hides / shows the event labels</li>
       <li>Click a setting knob, then change it with <kbd>↑</kbd> <kbd>↓</kbd> or <kbd>←</kbd> <kbd>→</kbd></li>
@@ -1036,32 +1068,41 @@ const MODES = {
 // ---- Senaryo satırı ----
 function buildScen() {
   const row = $('scenRow'); row.innerHTML = '';
+  const btn = (k, name, short) => { const b = document.createElement('button'); b.className = 'chip sc'; b.dataset.k = k; b.innerHTML = `<b>${name}</b>${short ? `<small>${short}</small>` : ''}`; return b; };
   for (const [g, keys] of GROUPS) {
-    const l = document.createElement('span'); l.className = 'glab'; l.textContent = T(g); row.appendChild(l);
-    for (const k of keys) {
-      const b = document.createElement('button');
-      b.className = 'chip'; b.dataset.k = k; b.title = sx(k, 'short');
-      b.textContent = sx(k, 'name');
-      b.onclick = () => select(k);
-      row.appendChild(b);
-    }
+    const col = document.createElement('div'); col.className = 'sgrp'; col.innerHTML = `<h4>${T(g)}</h4>`;
+    for (const k of keys) { const b = btn(k, sx(k, 'name'), sx(k, 'short')); b.onclick = () => { openScen(false); select(k); }; col.appendChild(b); }
+    row.appendChild(col);
   }
   const presets = store.get('presets', []);
   if (presets.length) {
-    const l = document.createElement('span'); l.className = 'glab'; l.textContent = T('Kayıtlı'); row.appendChild(l);
+    const col = document.createElement('div'); col.className = 'sgrp'; col.innerHTML = `<h4>${T('Kayıtlı')}</h4>`;
     presets.forEach((pr, i) => {
-      const b = document.createElement('button');
-      b.className = 'chip'; b.dataset.k = 'preset' + i; b.title = MODES[pr.p.mode].name;
-      b.innerHTML = pr.name + '<span class="x" title="' + T('Sil') + '">✕</span>';
+      const b = btn('preset' + i, pr.name, MODES[pr.p.mode].name);
+      b.insertAdjacentHTML('beforeend', '<span class="x" title="' + T('Sil') + '">✕</span>');
       b.onclick = e => {
         if (e.target.classList.contains('x')) { const l = store.get('presets', []); l.splice(i, 1); store.set('presets', l); buildScen(); markScen(); return; }
-        startCustom(pr.p, pr.name, 'preset' + i);
+        openScen(false); startCustom(pr.p, pr.name, 'preset' + i);
       };
-      row.appendChild(b);
+      col.appendChild(b);
     });
+    row.appendChild(col);
   }
 }
-function markScen() { document.querySelectorAll('#scenRow .chip').forEach(b => b.classList.toggle('on', b.dataset.k === curKey)); }
+// senaryo penceresi
+let scenFocus = null;
+function openScen(on) {
+  const m = $('scenModal');
+  if (on === m.classList.contains('on')) return;
+  m.classList.toggle('on', on);
+  if (on) { scenFocus = document.activeElement; const b = m.querySelector('.chip.on') || m.querySelector('.chip'); if (b) b.focus(); }
+  else if (scenFocus && scenFocus.focus) scenFocus.focus();
+}
+function updScenBtn() {
+  const nm = SCEN[curKey] ? sx(curKey, 'name') : curKey ? T(curName) : L('Senaryo seç', 'Choose a scenario');
+  $('scenName').textContent = nm; $('scenBtn').classList.toggle('empty', !curKey);
+}
+function markScen() { document.querySelectorAll('#scenRow .chip').forEach(b => b.classList.toggle('on', b.dataset.k === curKey)); updScenBtn(); }
 
 function scenParams() {
   const s = SCEN[curKey];
@@ -1796,6 +1837,9 @@ function setMarks(on) {
   $('skMarks').classList.toggle('on', !on);
 }
 $('skMarks').onclick = () => setMarks(!$('cMarks').checked);
+$('scenBtn').onclick = () => openScen(true);
+$('smClose').onclick = () => openScen(false);
+$('scenModal').addEventListener('click', e => { if (e.target === $('scenModal')) openScen(false); });
 autoAx = store.get('autoAx', true); $('cAuto').checked = autoAx;
 $('cAuto').onchange = e => { autoAx = e.target.checked; store.set('autoAx', autoAx); if (!autoAx) CH.forEach(c => { c.min = c.f.min; c.max = c.f.max; c.ticks = c.f.ticks; }); rescale(true); };
 $('cMarks').onchange = e => setMarks(e.target.checked);
@@ -1848,12 +1892,14 @@ $('kPlus').onclick = () => stepKnob(selKnob, 1);
 })();
 
 document.addEventListener('keydown', e => {
+  if ($('scenModal').classList.contains('on') && e.key !== 'Escape') return;
   const ae = document.activeElement;
   if (/INPUT|SELECT|TEXTAREA/.test(ae.tagName) && ae.type !== 'range') return;
   if (e.code === 'Space') { e.preventDefault(); togglePause(); }
   else if (e.key === 'f' || e.key === 'F') { fsSeen(); toggleFs(); }
   else if (e.key === 'l' || e.key === 'L') setMarks(!$('cMarks').checked);
-  else if (e.key === 'Escape') { if ($('modeRow').classList.contains('on')) openModes(false); else if ($('vent').classList.contains('fs')) toggleFs(); else selectKnob(null); }
+  else if (e.key === 's' || e.key === 'S') { e.preventDefault(); openScen(true); }
+  else if (e.key === 'Escape') { if ($('scenModal').classList.contains('on')) openScen(false); else if ($('modeRow').classList.contains('on')) openModes(false); else if ($('vent').classList.contains('fs')) toggleFs(); else selectKnob(null); }
   else if (selKnob && (e.key === 'ArrowUp' || e.key === 'ArrowRight')) { e.preventDefault(); stepKnob(selKnob, 1); }
   else if (selKnob && (e.key === 'ArrowDown' || e.key === 'ArrowLeft')) { e.preventDefault(); stepKnob(selKnob, -1); }
 });
