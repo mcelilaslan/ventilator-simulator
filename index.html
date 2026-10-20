@@ -337,6 +337,7 @@ footer{margin-top:16px;color:var(--muted);font-size:12px}
       <div class="seg" id="speed"><button data-s="0.5">0.5×</button><button data-s="1" class="on">1×</button><button data-s="2">2×</button></div>
       <label class="chk"><input type="checkbox" id="cPmus" checked> <span data-i="cP">Pmus izi</span></label>
       <label class="chk"><input type="checkbox" id="cMarks" checked> <span data-i="cM">Olay işaretleri</span></label>
+      <label class="chk"><input type="checkbox" id="cAuto" checked> <span data-i="cA">Otomatik eksen</span></label>
       <div class="mini"><div class="lab"><span data-i="dB">Dalga yüksekliği</span><b id="vSize"></b></div><input type="range" id="rSize" min="200" max="900" step="10"></div>
       <label class="chk"><input type="checkbox" id="cFit" checked> <span data-i="cF">Ekrana sığdır</span></label>
       <div class="mini"><div class="lab"><span data-i="zP">Zaman penceresi</span><b id="vWin"></b></div><input type="range" id="rWin" min="4" max="30" step="1"></div>
@@ -880,7 +881,7 @@ const EN = {
   'Ayar adı': 'Preset name', 'Ayarı kaydet': 'Save preset', 'Sıfırla': 'Reset', 'Ayarı düzelt': 'Fix settings',
   'Ventilasyon modunu değiştir': 'Change ventilation mode', 'Chatburn mod sınıflaması': 'Chatburn mode classification',
   'Üstten bir senaryo seçin; dalga formları akmaya başlasın.': 'Pick a scenario above and the waveforms start sweeping.',
-  'MV-SİM 300': 'MV-SIM 300', 'Tam ekranda izle': 'Watch full screen', 'Ayarları bitirince tam ekrana geçin (kısayol <kbd>F</kbd>)': 'When your settings are done, switch to full screen (shortcut <kbd>F</kbd>)', 'Ekrana sığdır': 'Fit to window', 'DONDURULDU': 'FROZEN', 'BEKLEMEDE': 'STANDBY',
+  'MV-SİM 300': 'MV-SIM 300', 'Otomatik eksen': 'Auto-scale axes', 'Tam ekranda izle': 'Watch full screen', 'Ayarları bitirince tam ekrana geçin (kısayol <kbd>F</kbd>)': 'When your settings are done, switch to full screen (shortcut <kbd>F</kbd>)', 'Ekrana sığdır': 'Fit to window', 'DONDURULDU': 'FROZEN', 'BEKLEMEDE': 'STANDBY',
   'Ptepe': 'Ppeak', 'Pplato': 'Pplat', 'ΔP sürüş': 'Driving ΔP', 'Hasta eforu*': 'Effort rate*', 'Tetik eforu*': 'Trigger effort*',
   'Tetik için gereken kas basıncı: PEEPi + tetik eşiği': 'Muscle pressure needed to trigger: PEEPi + trigger threshold',
   'Ventilasyon modu…': 'Ventilation mode…', 'Ventilasyon modu': 'Ventilation mode', 'Dalgaları dondur': 'Freeze waves', 'Devam et': 'Resume',
@@ -1441,7 +1442,43 @@ function lanes() {
   return out;
 }
 
+// ---- Otomatik Y ekseni: görünen penceredeki en küçük/büyük değere göre basamaklı ölçek ----
+CH.forEach(c => { c.f = { min: c.min, max: c.max, ticks: c.ticks }; c.shrink = 0; });
+let autoAx = true, lastScale = 0;
+const ceilTo = (v, s) => Math.ceil(v / s) * s, floorTo = (v, s) => Math.floor(v / s) * s;
+function tickStep(range, n) { for (const s of [1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500]) if (range / s <= n) return s; return 1000; }
+function axisTarget(c, lo, hi) {
+  if (c.k === 'paw') {
+    const max = Math.max(15, ceilTo(hi + 3, 5)), min = Math.min(-5, floorTo(lo - 2, 5));
+    return { min, max };
+  }
+  if (c.k === 'flow') { const a = Math.max(30, ceilTo(Math.max(-lo, hi) * 1.1, 20)); return { min: -a, max: a }; }
+  if (c.k === 'vol') { const max = Math.max(300, ceilTo(hi * 1.1, 100)); return { min: -Math.round(max * 0.05), max }; }
+  const a = Math.max(10, ceilTo(Math.max(-lo, hi) * 1.15, 5)); return { min: -a, max: a };
+}
+function applyAxis(c, t) {
+  c.min = t.min; c.max = t.max;
+  const st = tickStep(t.max - Math.max(0, t.min) , c.k === 'paw' ? 4 : 3), ticks = [];
+  for (let v = ceilTo(t.min + st * 0.05, st); v < t.max - st * 0.2; v += st) ticks.push(v);
+  c.ticks = ticks;
+}
+function rescale(force) {
+  const now = performance.now();
+  if (!force && now - lastScale < 500) return; lastScale = now;
+  CH.forEach((c, i) => {
+    if (!autoAx || !sim || !cols) { c.min = c.f.min; c.max = c.f.max; c.ticks = c.f.ticks; c.shrink = 0; return; }
+    let lo = Infinity, hi = -Infinity; const b = cols[i];
+    for (let x = 0; x < b.mn.length; x++) { if (b.mn[x] < lo) lo = b.mn[x]; if (b.mx[x] > hi) hi = b.mx[x]; }
+    if (!isFinite(lo)) return;
+    const t = axisTarget(c, lo, hi);
+    // büyürken hemen, küçülürken 3 kontrol (yaklaşık 1.5 s) bekleyerek değiş: eksen sürekli zıplamasın
+    if (t.max > c.max || t.min < c.min || force) { c.shrink = 0; applyAxis(c, t); }
+    else if (t.max < c.max || t.min > c.min) { if (++c.shrink >= 3) { c.shrink = 0; applyAxis(c, t); } }
+    else c.shrink = 0;
+  });
+}
 function draw() {
+  rescale();
   ctx.fillStyle = COL['--screen']; ctx.fillRect(0, 0, W, H);
   const L = lanes(), pw = plotW();
   const cur = sim ? colOf(sim.t) : -1;
@@ -1759,6 +1796,8 @@ function setMarks(on) {
   $('skMarks').classList.toggle('on', !on);
 }
 $('skMarks').onclick = () => setMarks(!$('cMarks').checked);
+autoAx = store.get('autoAx', true); $('cAuto').checked = autoAx;
+$('cAuto').onchange = e => { autoAx = e.target.checked; store.set('autoAx', autoAx); if (!autoAx) CH.forEach(c => { c.min = c.f.min; c.max = c.f.max; c.ticks = c.f.ticks; }); rescale(true); };
 $('cMarks').onchange = e => setMarks(e.target.checked);
 setMarks(store.get('marks', true));
 $('bFs2').onclick = () => { fsSeen(); if (!$('vent').classList.contains('fs')) toggleFs(); };
