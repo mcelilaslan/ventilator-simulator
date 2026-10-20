@@ -438,6 +438,8 @@ function startBreath(S, kind) {
     }
   }
   if (prev && prev.end == null) prev.end = t;
+  // yeni soluk başlarken ekspiratuvar akım hâlâ sürüyorsa: ekspiryum bitmedi (dinamik hiperinflasyon)
+  expUnfinished(S);
   S.breaths.push(b);
   S.curBreath = b; S.phase = 'insp'; S.phaseStart = t; S.Vtid = 0; S.Fpeak = 0; S.lastBreath = t; S.etsT = 0;
   if (p.reverse && p.reverse.ratio && kind === 'time') {
@@ -446,6 +448,12 @@ function startBreath(S, kind) {
   }
 }
 
+// ekspiryum, akım sıfıra inmeden yeni bir soluk ya da hasta eforuyla kesiliyorsa işaretle (ekspiryum başına bir kez)
+function expUnfinished(S) {
+  if (S.phase !== 'exp' || S.expFlag || !(S.out.flow < -3)) return;
+  S.expFlag = true;
+  S.events.push({ t: S.t, type: 'AKIM SIFIRA İNMEDİ', ch: 'flow', v: Math.round(S.out.flow) });
+}
 // inspiryum gaz verme bitti: inspiratuvar duraklama / tutma varsa önce ona geç
 function endFlow(S) {
   const p = S.p;
@@ -455,7 +463,7 @@ function endFlow(S) {
 }
 
 function endInsp(S) {
-  S.phase = 'exp'; S.phaseStart = S.t;
+  S.phase = 'exp'; S.phaseStart = S.t; S.expFlag = false;
   const b = S.curBreath; b.Vti = S.Vtid; b.ti = S.t - b.start;
   for (const e of S.efforts) if (e.pushAt != null && e.pushEnd == null) e.pushEnd = S.t - e.start;
   S.tiHist.push(b.ti); if (S.tiHist.length > 6) S.tiHist.shift();
@@ -480,6 +488,7 @@ function step(S, dt) {
   // yeni spontan efor planla
   if (p.pt && p.pt.rr && t >= S.nextEffort) {
     newEffort(S, t, p.pt);
+    expUnfinished(S);
     S.nextEffort = t + (60 / p.pt.rr) * (1 + (S.rand() - 0.5) * 2 * (p.pt.jitter || 0.06));
   }
   let pmus = 0;
@@ -656,13 +665,13 @@ const SCEN = {
   },
   peepi: {
     name: 'Auto-PEEP ve dış PEEP', short: 'Akım kısıtlılığında tetiklemek',
-    p: { mode: 'VCV', PEEP: 3, Vt: 0.45, Fset: 60, rate: 12, trig: 2, C: 55, R: 15, Rexp: 1.2, Pcrit: 9, pt: { rr: 16, pmax: 7, ti: 0.8, jitter: 0.08 } },
+    p: { mode: 'VCV', PEEP: 3, Vt: 0.45, Fset: 60, rate: 12, trig: 2, C: 60, R: 18, Rexp: 1.6, Pcrit: 8, pt: { rr: 16, pmax: 7, ti: 0.8, jitter: 0.08 } },
     fix: { PEEP: 8 }, fixText: 'PEEP 3→8 (PEEPtot\'un yaklaşık %80\'i)',
-    marks: ['ETKİSİZ EFOR', 'GECİKME'],
-    look: ['Ekspiryum sonunda akım sıfıra inmez; efor geldiğinde akım önce sıfıra çekilir, soluk ancak sonra gelir ya da hiç gelmez.', 'Sağdaki Tetik eforu* değeri yüksek: hasta her solukta önce auto-PEEP\'i yenmek zorunda.', 'Eksp. tut ile PEEPtot\'u ölçün; dış PEEP\'i artırdıktan sonra tekrar ölçün. PEEPtot neredeyse değişmez, Ptepe de artmaz.'],
+    marks: ['ETKİSİZ EFOR', 'GECİKME', 'AKIM SIFIRA İNMEDİ'],
+    look: ['Ekspiryum sonunda akım sıfıra inmez (EKSP. BİTMEDİ işareti: kesikli çizgi akımın inmesi gereken sıfır düzeyi, kalın çubuk kalan akım, sayı L/dk); efor geldiğinde akım önce sıfıra çekilir, soluk ancak sonra gelir ya da hiç gelmez.', 'Sağdaki Tetik eforu* değeri yüksek: hasta her solukta önce auto-PEEP\'i yenmek zorunda.', 'Eksp. tut ile PEEPtot\'u ölçün; dış PEEP\'i artırdıktan sonra tekrar ölçün. PEEPtot neredeyse değişmez, Ptepe de artmaz.'],
     mech: "Akım kısıtlılığında küçük hava yolları ekspiryumda kritik bir basınçta kapanır; alveoldeki basınç bu düzeyin altına inemez ve auto-PEEP oluşur. Hasta tetik için önce auto-PEEP'i, sonra tetik eşiğini aşmalıdır: auto-PEEP 10 ve tetik −1 cmH₂O ise 11 cmH₂O efor gerekir. Dış PEEP kritik basıncın altında kaldıkça ekspiratuvar akımı engellemez, ama hava yolu ile alveol arasındaki farkı kapatır: dış PEEP 7'ye çıkınca gereken efor 4 cmH₂O'ya iner. Auto-PEEP varken akım tetiği basınç tetiğinden üstün değildir; tetiği duyarlı yapmak sorunu çözmez.",
     causes: ["Hasta: ekspiratuvar akım kısıtlılığı (KOAH, astım), uzun zaman sabiti", "Ventilatör: yüksek dakika ventilasyonu, yüksek Vt ya da PS, kısa ekspiryum süresi", "Dış PEEP'in auto-PEEP'e göre düşük olması"],
-    fixNote: "Dış PEEP PEEPtot'un yaklaşık %80'ine çıkınca eforların hepsi tetikler ve gecikme kısalır; hiperinflasyon artmaz. VKV'de PEEP eklenince Ptepe yükseliyorsa akım kısıtlılığı yoktur ya da PEEP fazladır, aşırı şişme olur: PEEP geri alınır. Diğer yollar: dakika ventilasyonunu azaltmak, ekspiryumu uzatmak, bronkodilatör. Hasta ayarlarındaki Akım kısıtlılığı ayarını sıfıra çekip aynı PEEP artışını deneyin: bu kez PEEPtot ve Ptepe de yükselir.",
+    fixNote: "Dış PEEP PEEPtot'un yaklaşık %80'ine çıkınca eforların hepsi tetikler ve gecikme kısalır; hiperinflasyon artmaz. Dış PEEP dinamik hava hapsini gidermez: akım yine sıfıra inmez ve tetikte kısa bir gecikme kalır; bunun için dakika ventilasyonu azaltılır ve ekspiryum uzatılır. VKV'de PEEP eklenince Ptepe yükseliyorsa akım kısıtlılığı yoktur ya da PEEP fazladır, aşırı şişme olur: PEEP geri alınır. Diğer yollar: dakika ventilasyonunu azaltmak, ekspiryumu uzatmak, bronkodilatör. Hasta ayarlarındaki Akım kısıtlılığı ayarını sıfıra çekip aynı PEEP artışını deneyin: bu kez PEEPtot ve Ptepe de yükselir.",
   },
   prvc: {
     name: 'PRVC\'de destek azalması', short: 'Hasta çektikçe basınç düşer',
@@ -738,8 +747,8 @@ const SCEN = {
     name: 'Hava hapsi (breath stacking)', short: 'Ekspiryum bitmeden yeni soluk',
     p: { mode: 'VCV', PEEP: 5, Vt: 0.5, Fset: 40, rate: 26, trig: 2, C: 60, R: 22 },
     fix: { rate: 12, Fset: 60 }, fixText: 'f 26→12, akım 40→60 L/dk',
-    marks: [],
-    look: ['Ekspiratuvar akım sıfıra dönmeden yeni soluk başlar.', 'Ekspiratuvar tutma (Eksp. tut) yapın: PEEPtot ayarlanan PEEP\'ten yüksek çıkar, fark auto-PEEP\'tir.', 'Uzun zaman sabiti (τ = R×C) ve kısa ekspiryum süresi hava hapsini artırır.'],
+    marks: ['AKIM SIFIRA İNMEDİ'],
+    look: ['Ekspiratuvar akım sıfıra dönmeden yeni soluk başlar: EKSP. BİTMEDİ işaretinde kesikli çizgi akımın inmesi gereken sıfır düzeyini, kalın çubuk o anda hâlâ akan ekspiratuvar akımı (sayı, L/dk) gösterir.', 'Ekspiratuvar tutma (Eksp. tut) yapın: PEEPtot ayarlanan PEEP\'ten yüksek çıkar, fark auto-PEEP\'tir.', 'Uzun zaman sabiti (τ = R×C) ve kısa ekspiryum süresi hava hapsini artırır.'],
     mech: "Ekspiryum sonunda alveolde gaz kalırsa (auto-PEEP) hastanın her eforu önce bu basıncı dengelemek zorundadır; bu, gecikmeli tetiklemenin ve etkisiz eforun ana hasta faktörüdür. Ekshalasyon valfinin geç açılması ya da ekspiryuma taşan inflasyon dinamik hiperinflasyonu artırır.",
     causes: ["Yüksek frekans, uzun Ti, yüksek Vt", "Hasta: uzun zaman sabiti (KOAH, bronkospazm)"],
     fixNote: 'Daha düşük frekans ve daha yüksek akım ekspiryuma zaman bırakır. Düzeltmeden sonra Eksp. tut ile PEEPtot\'u tekrar ölçün.',
@@ -785,11 +794,11 @@ const SCEN_EN = {
   },
   peepi: {
     name: 'Auto-PEEP and external PEEP', short: 'Triggering with flow limitation',
-    look: ['Expiratory flow does not reach zero; when an effort arrives, flow is first pulled to zero and the breath comes only afterwards, or not at all.', 'Trigger effort* on the right is high: on every breath the patient must first overcome auto-PEEP.', 'Measure PEEPtot with Exp. hold, then again after raising external PEEP. PEEPtot hardly changes and Ppeak does not rise.'],
+    look: ['Expiratory flow does not reach zero (EXP. UNFINISHED mark: the dashed line is the zero level flow should reach, the thick bar the remaining flow, the number in L/min); when an effort arrives, flow is first pulled to zero and the breath comes only afterwards, or not at all.', 'Trigger effort* on the right is high: on every breath the patient must first overcome auto-PEEP.', 'Measure PEEPtot with Exp. hold, then again after raising external PEEP. PEEPtot hardly changes and Ppeak does not rise.'],
     mech: "With expiratory flow limitation, small airways close at a critical pressure during expiration; alveolar pressure cannot fall below this level and auto-PEEP develops. To trigger, the patient must first overcome auto-PEEP and then the trigger threshold: with auto-PEEP 10 and a −1 cmH₂O trigger, an 11 cmH₂O effort is needed. As long as external PEEP stays below the critical pressure it does not impede expiratory flow, but it closes the gap between airway and alveolus: with external PEEP 7, the effort needed drops to 4 cmH₂O. With auto-PEEP a flow trigger is not better than a pressure trigger; making the trigger more sensitive does not solve the problem.",
     causes: ["Patient: expiratory flow limitation (COPD, asthma), long time constant", "Ventilator: high minute ventilation, high Vt or PS, short expiratory time", "External PEEP low relative to auto-PEEP"],
     fixText: 'PEEP 3→8 (about 80% of PEEPtot)',
-    fixNote: "With external PEEP at about 80% of PEEPtot every effort triggers and the delay shortens; hyperinflation does not increase. In VCV, if Ppeak rises when PEEP is added, there is no flow limitation or PEEP is too high and causes overdistension: take the PEEP back. Other options: lower minute ventilation, lengthen expiration, bronchodilators. Set Flow limitation in the Patient settings to zero and try the same PEEP increase: this time PEEPtot and Ppeak rise too.",
+    fixNote: "With external PEEP at about 80% of PEEPtot every effort triggers and the delay shortens; hyperinflation does not increase. External PEEP does not remove dynamic air trapping: flow still does not reach zero and a short trigger delay remains; for that, lower minute ventilation and lengthen expiration. In VCV, if Ppeak rises when PEEP is added, there is no flow limitation or PEEP is too high and causes overdistension: take the PEEP back. Other options: lower minute ventilation, lengthen expiration, bronchodilators. Set Flow limitation in the Patient settings to zero and try the same PEEP increase: this time PEEPtot and Ppeak rise too.",
   },
   prvc: {
     name: 'Falling support in PRVC', short: 'The harder the patient pulls, the lower the pressure',
@@ -849,7 +858,7 @@ const SCEN_EN = {
   },
   stack: {
     name: 'Air trapping (breath stacking)', short: 'New breath before expiration ends',
-    look: ['A new breath starts before expiratory flow returns to zero.', 'Do an expiratory hold (Exp. hold): PEEPtot is higher than set PEEP; the difference is auto-PEEP.', 'A long time constant (τ = R×C) and short expiratory time increase air trapping.'],
+    look: ['A new breath starts before expiratory flow returns to zero: at the EXP. UNFINISHED mark the dashed line shows the zero level flow should reach and the thick bar the expiratory flow still running at that moment (number, L/min).', 'Do an expiratory hold (Exp. hold): PEEPtot is higher than set PEEP; the difference is auto-PEEP.', 'A long time constant (τ = R×C) and short expiratory time increase air trapping.'],
     mech: "If gas remains in the alveoli at end-expiration (auto-PEEP), every patient effort must first offset this pressure; it is the main patient factor in delayed triggering and ineffective efforts. Late opening of the exhalation valve or inflation spilling into expiration increases dynamic hyperinflation.",
     causes: ["High rate, long Ti, high Vt", "Patient: long time constant (COPD, bronchospasm)"],
     fixText: 'f 26→12, flow 40→60 L/min',
@@ -898,7 +907,7 @@ const EN = {
   // olaylar
   'ETKİSİZ EFOR': 'INEFFECTIVE EFFORT', 'GECİKME': 'TRIGGER DELAY', 'OTO': 'AUTO-TRIGGER', 'ÇİFT': 'DOUBLE TRIGGER',
   'ERKEN DÖNGÜ': 'EARLY CYCLING', 'GEÇ DÖNGÜ': 'DELAYED CYCLING', 'BASINÇ ÇIKINTISI': 'PRESSURE SPIKE', 'AKIM AÇLIĞI': 'FLOW STARVATION',
-  'TERS TETİK': 'REVERSE TRIGGER', 'DESTEK ↓': 'SUPPORT ↓',
+  'TERS TETİK': 'REVERSE TRIGGER', 'AKIM SIFIRA İNMEDİ': 'FLOW NOT AT ZERO', 'DESTEK ↓': 'SUPPORT ↓',
 };
 // uzun statik bloklar
 const HTML_EN = {
@@ -1501,7 +1510,8 @@ function draw() {
       const ln = laneOf(e.ch) || laneOf('flow');
       const x = LEFT + colOf(e.t);
       ctx.font = '600 11px system-ui,sans-serif';
-      const lab = T(e.type), w = ctx.measureText(lab).width + 10;
+      const nm = e.type === 'AKIM SIFIRA İNMEDİ' ? (LANG === 'en' ? 'EXP. UNFINISHED' : 'EKSP. BİTMEDİ') : T(e.type);
+      const lab = nm + (e.v != null ? ` ${e.v}` : ''), w = ctx.measureText(lab).width + 10;
       const bx = Math.min(Math.max(LEFT, x - w / 2), W - RIGHT - w);
       let row = 0;
       while (placed.some(q => q.ln === ln && q.row === row && bx < q.x2 + 4 && bx + w > q.x1 - 4)) row++;
@@ -1512,6 +1522,16 @@ function draw() {
       ctx.fillStyle = '#fff'; ctx.textAlign = 'left'; ctx.fillText(lab, bx + 5, y + 12);
       ctx.strokeStyle = ec; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
       ctx.beginPath(); ctx.moveTo(x + .5, y + 16); ctx.lineTo(x + .5, ln.y1); ctx.stroke(); ctx.setLineDash([]);
+      if (e.v != null) {
+        // kalan ekspiratuvar akım: sıfır çizgisinden akımın o anki değerine kalın çubuk
+        const ch = ln.ch, ym = v => ln.y1 - (v - ch.min) / (ch.max - ch.min) * (ln.y1 - ln.y0);
+        const y0 = ym(0), yv = Math.min(ln.y1, Math.max(ym(e.v), y0 + 9));
+        // sıfır düzeyi (akımın inmesi gereken yer) kesikli, kalan akım kalın çubuk
+        ctx.strokeStyle = ec; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]);
+        ctx.beginPath(); ctx.moveTo(x - 40, y0); ctx.lineTo(x, y0); ctx.stroke(); ctx.setLineDash([]);
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(x - 5, y0); ctx.lineTo(x + 5, y0); ctx.moveTo(x, y0); ctx.lineTo(x, yv); ctx.moveTo(x - 5, yv); ctx.lineTo(x + 5, yv); ctx.stroke();
+      }
       if (e.t2 && visible(e.t2)) {
         const x2 = LEFT + colOf(e.t2);
         if (x2 > x) { ctx.strokeStyle = ec; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x, ln.y1 - 3); ctx.lineTo(x2, ln.y1 - 3); ctx.stroke(); }
