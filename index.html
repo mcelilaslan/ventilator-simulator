@@ -34,20 +34,28 @@
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 button,select,input{font:inherit;color:inherit}
-.app{max-width:1500px;margin:0 auto;padding:12px 16px 32px}
-header{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+.app{max-width:1500px;margin:0 auto;padding:8px 16px 32px}
+header{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:6px}
 header h1{font-size:18px;margin:0;font-weight:650}
 header .sub{color:var(--muted);font-size:13px}
 header #lang{margin-left:auto;align-self:center}
 
 /* üst satırlar */
-.top{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:4px 10px;margin-bottom:12px}
+.top{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:2px 10px;margin-bottom:8px}
+.row.bar{align-items:center;padding:5px 0}
+.tgl{background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:4px 10px;cursor:pointer;font-size:11.5px;text-transform:uppercase;letter-spacing:.7px;font-weight:650;color:var(--muted)}
+.tgl i{font-style:normal;display:inline-block;transition:transform .15s}
+.tgl.on{color:var(--accent);border-color:var(--accent)}
+.tgl.on i{transform:rotate(90deg)}
+.row.fold{display:none}
+.row.fold.open{display:flex}
+#patSum{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .row{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-top:1px solid var(--line)}
 .row:first-child{border-top:0}
 .rowlab{flex:0 0 70px;font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);font-weight:650;padding-top:6px}
 .chips,.ctls{flex:1;display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;min-width:0}
 .glab{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-left:4px}
-.chip{background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:4px 11px;cursor:pointer;font-size:13px;white-space:nowrap}
+.chip{background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:3px 10px;cursor:pointer;font-size:12.5px;white-space:nowrap}
 .chip:hover{border-color:var(--accent)}
 .chip.on{background:var(--sel);border-color:var(--accent);color:var(--accent);font-weight:600}
 .chip .x{margin-left:6px;color:var(--muted)}
@@ -72,8 +80,8 @@ label.chk{display:inline-flex;gap:5px;align-items:center;color:var(--muted);curs
 .save input{width:130px;background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:3px 8px;font-size:13px}
 
 /* cihaz */
-.device{background:var(--bezel);border:1px solid var(--bezelLine);border-radius:22px;padding:10px 14px 14px;box-shadow:0 8px 30px rgba(0,0,0,.25)}
-.device .brand{text-align:center;font-weight:700;letter-spacing:2px;color:var(--bezelInk);font-size:13px;margin-bottom:8px}
+.device{background:var(--bezel);border:1px solid var(--bezelLine);border-radius:22px;padding:6px 14px 10px;box-shadow:0 8px 30px rgba(0,0,0,.25)}
+.device .brand{text-align:center;font-weight:700;letter-spacing:2px;color:var(--bezelInk);font-size:12px;margin-bottom:4px;line-height:1.2}
 .dev{display:grid;grid-template-columns:1fr 132px;gap:14px}
 .screen{background:var(--scr);border:3px solid #1b232c;border-radius:6px;overflow:hidden;color:var(--scrInk);min-width:0;display:flex;flex-direction:column}
 .hdr{display:flex;align-items:stretch;background:var(--hdr);min-height:40px;color:#fff}
@@ -139,6 +147,33 @@ canvas{display:block;width:100%;height:460px}
 .device.fs{position:fixed;inset:0;z-index:50;border-radius:0;overflow:auto}
 .device.fs canvas{height:calc(100vh - 290px) !important}
 
+@media (min-width:861px){
+  .mid{grid-template-rows:var(--cvH,460px)}
+  .read,.soft{min-height:0;overflow:hidden}
+  .device.fs .mid{grid-template-rows:auto}
+  .hard{padding-top:10px}
+  /* alçak pencere: göstergeler, tuşlar ve düğmeler sıkışır */
+  .vent-c .read{display:grid;grid-template-columns:1fr 1fr;align-content:start;gap:2px 10px;padding:4px 8px}
+  .vent-c .smg{grid-column:1/-1;margin-top:2px;gap:0 8px}
+  .vent-c .sm .l{font-size:10px;line-height:1.15}
+  .vent-c .sm .v{line-height:1.15}
+  .vent-c .big .l{font-size:10.5px}
+  .vent-c .big .v{font-size:22px}
+  .vent-c .big{padding:0 0 2px}
+  .vent-c .sm .v{font-size:14px}
+  .vent-c .sk{padding:4px 4px;font-size:11.5px}
+  .vent-c .soft{gap:4px;padding:5px 6px}
+  .vent-c .kn{width:60px}
+  .vent-c .kn .k{width:48px;height:48px}
+  .vent-c .kn .kv{font-size:13px}
+  .vent-c .kn .kv.s{font-size:10.5px}
+  .vent-c .kn .kl{font-size:11px}
+  .vent-c .kbHead span{display:none}
+  .vent-c .rotary{width:84px;height:84px}
+  .vent-c .rotary .dot{left:32px;top:7px;transform-origin:5px 30px}
+  .vent-c .hdr{min-height:32px}
+  .vent-c .modeBlk b{font-size:17px}
+}
 @media (max-width:1100px){.mid{grid-template-columns:1fr 180px 104px}}
 @media (max-width:860px){
   .dev{grid-template-columns:1fr}
@@ -184,17 +219,24 @@ footer{margin-top:16px;color:var(--muted);font-size:12px}
 
   <section class="top">
     <div class="row"><span class="rowlab" data-i="rSenaryo">Senaryo</span><div class="chips" id="scenRow"></div></div>
-    <div class="row"><span class="rowlab" data-i="rHasta">Hasta</span><div class="ctls" id="patRow"></div></div>
-    <div class="row"><span class="rowlab" data-i="rGörünüm">Görünüm</span><div class="ctls">
+    <div class="row bar">
+      <button class="tgl" id="tPat"><span data-i="rHasta">Hasta</span> <i>▸</i></button>
+      <button class="tgl" id="tView"><span data-i="rGörünüm">Görünüm</span> <i>▸</i></button>
+      <span class="hintI" id="patSum"></span>
+      <span style="flex:1"></span>
+      <button class="btn danger" id="bReset" data-i="bR">Sıfırla</button>
+      <button class="btn primary" id="bFix" disabled>Ayarı düzelt</button>
+    </div>
+    <div class="row fold" id="rowPat"><span class="rowlab" data-i="rHasta2">Hasta</span><div class="ctls" id="patRow"></div></div>
+    <div class="row fold" id="rowView"><span class="rowlab" data-i="rGörünüm2">Görünüm</span><div class="ctls">
       <div class="seg" id="speed"><button data-s="0.5">0.5×</button><button data-s="1" class="on">1×</button><button data-s="2">2×</button></div>
       <label class="chk"><input type="checkbox" id="cPmus" checked> <span data-i="cP">Pmus izi</span></label>
       <label class="chk"><input type="checkbox" id="cMarks" checked> <span data-i="cM">Olay işaretleri</span></label>
-      <div class="mini"><div class="lab"><span data-i="dB">Dalga boyu</span><b id="vSize"></b></div><input type="range" id="rSize" min="300" max="900" step="20"></div>
+      <div class="mini"><div class="lab"><span data-i="dB">Dalga boyu</span><b id="vSize"></b></div><input type="range" id="rSize" min="200" max="900" step="10"></div>
+      <label class="chk"><input type="checkbox" id="cFit" checked> <span data-i="cF">Ekrana sığdır</span></label>
       <div class="mini"><div class="lab"><span data-i="zP">Zaman penceresi</span><b id="vWin"></b></div><input type="range" id="rWin" min="4" max="30" step="1"></div>
       <span class="sep"></span>
       <div class="save"><input id="presetName" placeholder="Ayar adı" data-ip maxlength="40"><button class="btn" id="bSave" data-i="bS">Ayarı kaydet</button></div>
-      <button class="btn danger" id="bReset" data-i="bR">Sıfırla</button>
-      <button class="btn primary" id="bFix" disabled>Ayarı düzelt</button>
     </div></div>
   </section>
 
@@ -771,7 +813,7 @@ const EN = {
   'Ayar adı': 'Preset name', 'Ayarı kaydet': 'Save preset', 'Sıfırla': 'Reset', 'Ayarı düzelt': 'Fix settings',
   'Ventilasyon modunu değiştir': 'Change ventilation mode', 'Chatburn mod sınıflaması': 'Chatburn mode classification',
   'Üstten bir senaryo seçin; dalga formları akmaya başlasın.': 'Pick a scenario above and the waveforms start sweeping.',
-  'MV-SİM 300': 'MV-SIM 300', 'DONDURULDU': 'FROZEN', 'BEKLEMEDE': 'STANDBY',
+  'MV-SİM 300': 'MV-SIM 300', 'Ekrana sığdır': 'Fit to window', 'DONDURULDU': 'FROZEN', 'BEKLEMEDE': 'STANDBY',
   'Ptepe': 'Ppeak', 'Pplato': 'Pplat', 'ΔP sürüş': 'Driving ΔP', 'Hasta eforu*': 'Patient efforts*', 'Tetik eforu*': 'Trigger effort*',
   'Tetik için gereken kas basıncı: PEEPi + tetik eşiği': 'Muscle pressure needed to trigger: PEEPi + trigger threshold',
   'Ventilasyon modu…': 'Ventilation mode…', 'Ventilasyon modu': 'Ventilation mode', 'Dalgaları dondur': 'Freeze waves', 'Devam et': 'Resume',
@@ -968,7 +1010,7 @@ function restart() {
   clearNums();
 }
 
-function refreshAll() { markScen(); buildKnobs(); syncControls(); renderHdr(); renderInfo(); updFixBtn(); }
+function refreshAll() { markScen(); buildKnobs(); syncControls(); renderHdr(); renderInfo(); updFixBtn(); requestAnimationFrame(fit); }
 function select(k) {
   curKey = k; curName = SCEN[k].name; fixed = false;
   P = scenParams(); base = clone(P);
@@ -1177,6 +1219,7 @@ function syncControls() {
     c.el.classList.toggle('chg', !!base && JSON.stringify(get(base, c.key)) !== JSON.stringify(get(P, c.key)));
   }
   updKHint();
+  $('patSum').textContent = patSummary();
   $('selInfo').innerHTML = selKnob ? `<b>${selKnob.label}</b><br>${fmtKnob(selKnob, selKnob.opts ? get(P, selKnob.key) : knobVal(selKnob))} ${selKnob.unit || ''}` : T('Ayar seçilmedi');
   $('nFio').textContent = P.FiO2;
 }
@@ -1537,7 +1580,34 @@ function setTheme(t) {
   document.documentElement.setAttribute('data-theme', t);
   store.set('theme', t); readColors();
 }
-function setSize(v) { cv.style.height = v + 'px'; $('rSize').value = v; $('vSize').textContent = v + ' px'; store.set('size', v); resize(); }
+function setSize(v, keep) {
+  cv.style.height = v + 'px'; $('vent').style.setProperty('--cvH', v + 'px');
+  $('vent').classList.toggle('vent-c', v < 490);
+  $('rSize').value = v; $('vSize').textContent = v + ' px'; if (!keep) store.set('size', v); resize();
+}
+// pencereye sığdır: cihazın alt kenarı, sayfa en üstteyken görünür alanın içinde kalsın
+let fitOn = true, fitBusy = false;
+function fit() {
+  if (!fitOn || fitBusy || window.innerWidth <= 860 || $('vent').classList.contains('fs')) return;
+  fitBusy = true;
+  for (let i = 0; i < 3; i++) {
+    const cur = parseFloat(cv.style.height) || 460;
+    const bottom = $('vent').getBoundingClientRect().bottom + window.scrollY;
+    const v = Math.round(Math.max(240, Math.min(900, cur + (window.innerHeight - 8 - bottom))));
+    if (Math.abs(v - cur) < 2) break;
+    setSize(v, true);
+  }
+  fitBusy = false;
+}
+function setFold(id, open) {
+  $(id).classList.toggle('open', open);
+  $(id === 'rowPat' ? 'tPat' : 'tView').classList.toggle('on', open);
+  store.set('fold.' + id, open); fit();
+}
+function patSummary() {
+  const pr = PRESETS.find(m => m[1].C === P.C && m[1].R === P.R && m[1].Rexp === P.Rexp && m[1].Pcrit === (P.Pcrit || 0));
+  return (pr ? pr[0] + ' · ' : '') + `C ${P.C} · R ${P.R}` + (P.Pcrit ? ` · ${L('Pkrit', 'Pcrit')} ${P.Pcrit}` : '') + (P.pt.rr ? ` · ${T('Efor sıklığı').toLowerCase()} ${P.pt.rr}${T('/dk')}` : '');
+}
 function setWin(v) { WIN = v; $('rWin').value = v; $('vWin').textContent = v + ' s'; store.set('win', v); resetCols(); }
 function hold(kind) { if (sim) { sim.holdReq = sim.holdReq === kind ? null : kind; checkHolds(); } }
 
@@ -1567,7 +1637,7 @@ $('bReset').onclick = () => {
 document.querySelectorAll('#speed button').forEach(b => b.onclick = () => {
   speed = +b.dataset.s; document.querySelectorAll('#speed button').forEach(x => x.classList.toggle('on', x === b));
 });
-$('rSize').oninput = e => setSize(+e.target.value);
+$('rSize').oninput = e => { fitOn = false; $('cFit').checked = false; store.set('fit', false); setSize(+e.target.value); };
 $('rWin').oninput = e => setWin(+e.target.value);
 $('kMinus').onclick = () => stepKnob(selKnob, -1);
 $('kPlus').onclick = () => stepKnob(selKnob, 1);
@@ -1598,7 +1668,10 @@ document.addEventListener('keydown', e => {
   else if (selKnob && (e.key === 'ArrowUp' || e.key === 'ArrowRight')) { e.preventDefault(); stepKnob(selKnob, 1); }
   else if (selKnob && (e.key === 'ArrowDown' || e.key === 'ArrowLeft')) { e.preventDefault(); stepKnob(selKnob, -1); }
 });
-window.addEventListener('resize', resize);
+window.addEventListener('resize', () => { resize(); fit(); });
+$('cFit').onchange = e => { fitOn = e.target.checked; store.set('fit', fitOn); if (fitOn) fit(); else setSize(store.get('size', 460)); };
+$('tPat').onclick = () => setFold('rowPat', !$('rowPat').classList.contains('open'));
+$('tView').onclick = () => setFold('rowView', !$('rowView').classList.contains('open'));
 
 function setLang(l) {
   LANG = l; store.set('lang', l);
@@ -1614,6 +1687,8 @@ buildScen(); buildPat(); refreshAll();
 $('bPause').textContent = T('Dalgaları dondur'); $('bFs').textContent = T('Tam ekran');
 setTheme(store.get('theme', 'light'));
 setSize(store.get('size', window.innerWidth < 640 ? 400 : 460));
+fitOn = store.get('fit', true); $('cFit').checked = fitOn;
+for (const id of ['rowPat', 'rowView']) setFold(id, store.get('fold.' + id, false));
 setWin(store.get('win', window.innerWidth < 640 ? 8 : 12));
 updHdr(); setInterval(updHdr, 250);
 requestAnimationFrame(frame);
