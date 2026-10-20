@@ -1,0 +1,1622 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MV Asenkroni Simülatörü</title>
+<meta name="description" content="Canlı akan mekanik ventilatör ekranı: ayarlanabilir ventilatör ve hasta, normal soluk ve hasta-ventilatör asenkronisi tipleri (eğitim amaçlı). Live mechanical ventilator screen with patient-ventilator asynchrony scenarios (educational).">
+<style>
+:root{
+  --bg:#0b0f14; --panel:#121821; --panel2:#18202b; --line:#253041; --text:#e6edf3; --muted:#8b98a8;
+  --accent:#38bdf8; --sel:#0c2a3a; --warn:#f97316; --ok:#22c55e; --okBg:#14532d; --okInk:#dcfce7; --warnBg:#431407; --warnInk:#ffedd5;
+  /* cihaz */
+  --bezel:#2a3038; --bezelLine:#3a424d; --bezelInk:#9aa6b4;
+  --scr:#07111c; --scrPanel:#0d1b2a; --scrLine:#1d3247; --scrInk:#dbe7f3; --scrMuted:#7f93a8;
+  --hdr:#1f4f8f; --modeBlk:#e08a2e; --modeInk:#1b1003;
+  --soft:#163246; --softInk:#cfe6f3; --softLine:#24506b;
+  --knob:#1f6f7c; --knobInk:#ffffff; --knobTrk:#2b4256; --knobArc:#9bd5df; --knobSel:#ffd400;
+  --paw:#facc15; --flow:#4ade80; --vol:#60a5fa; --pmus:#c084fc; --timeTri:#6b7a8c;
+  --screen:#07111c; --grid:#11243a; --zero:#21405d; --tick:#5f7890;
+  color-scheme:dark;
+}
+:root[data-theme="light"]{
+  --bg:#eef2f6; --panel:#ffffff; --panel2:#f1f5f9; --line:#d5dde7; --text:#0f172a; --muted:#5b6778;
+  --accent:#0369a1; --sel:#e0f2fe; --warn:#c2410c; --ok:#15803d; --okBg:#dcfce7; --okInk:#14532d; --warnBg:#ffedd5; --warnInk:#7c2d12;
+  --bezel:#e6e9ed; --bezelLine:#cfd5dc; --bezelInk:#6b7685;
+  --scr:#cfdbe6; --scrPanel:#dfe8f0; --scrLine:#b3c4d4; --scrInk:#16325c; --scrMuted:#4d6782;
+  --hdr:#4f74b5; --modeBlk:#e08a2e; --modeInk:#1b1003;
+  --soft:#b7d9d9; --softInk:#163a46; --softLine:#9cc6c6;
+  --knob:#2f7f8c; --knobInk:#ffffff; --knobTrk:#a9bccc; --knobArc:#16325c; --knobSel:#f2c200;
+  --paw:#9a3412; --flow:#166534; --vol:#1e3a8a; --pmus:#6b21a8; --timeTri:#475569;
+  --screen:#dfe8f0; --grid:#c7d4e0; --zero:#9fb2c4; --tick:#4d6782;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+button,select,input{font:inherit;color:inherit}
+.app{max-width:1500px;margin:0 auto;padding:12px 16px 32px}
+header{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+header h1{font-size:18px;margin:0;font-weight:650}
+header .sub{color:var(--muted);font-size:13px}
+header #lang{margin-left:auto;align-self:center}
+
+/* üst satırlar */
+.top{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:4px 10px;margin-bottom:12px}
+.row{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-top:1px solid var(--line)}
+.row:first-child{border-top:0}
+.rowlab{flex:0 0 70px;font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);font-weight:650;padding-top:6px}
+.chips,.ctls{flex:1;display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;min-width:0}
+.glab{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-left:4px}
+.chip{background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:4px 11px;cursor:pointer;font-size:13px;white-space:nowrap}
+.chip:hover{border-color:var(--accent)}
+.chip.on{background:var(--sel);border-color:var(--accent);color:var(--accent);font-weight:600}
+.chip .x{margin-left:6px;color:var(--muted)}
+.mini{display:inline-flex;flex-direction:column;gap:1px;min-width:118px}
+.mini .lab{display:flex;justify-content:space-between;gap:6px;font-size:11.5px;color:var(--muted)}
+.mini .lab b{color:var(--text);font-variant-numeric:tabular-nums;font-weight:600}
+.mini input[type=range]{width:100%;accent-color:var(--accent);margin:0}
+.sep{width:1px;align-self:stretch;background:var(--line);margin:0 2px}
+.hintI{font-size:11.5px;color:var(--muted)}
+.btn{background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:5px 11px;cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.btn.danger{border-color:#dc2626;color:#ef4444}
+.btn.primary{background:var(--okBg);border-color:var(--ok);color:var(--okInk);font-weight:600}
+.btn.primary.undo{background:var(--warnBg);border-color:var(--warn);color:var(--warnInk)}
+.btn:disabled{opacity:.4;cursor:default}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.seg button{background:var(--panel2);border:0;padding:4px 9px;cursor:pointer;border-right:1px solid var(--line);font-size:12.5px}
+.seg button:last-child{border-right:0}
+.seg button.on{background:var(--sel);color:var(--accent);font-weight:600}
+label.chk{display:inline-flex;gap:5px;align-items:center;color:var(--muted);cursor:pointer;user-select:none;font-size:13px}
+.save{display:inline-flex;gap:6px}
+.save input{width:130px;background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:3px 8px;font-size:13px}
+
+/* cihaz */
+.device{background:var(--bezel);border:1px solid var(--bezelLine);border-radius:22px;padding:10px 14px 14px;box-shadow:0 8px 30px rgba(0,0,0,.25)}
+.device .brand{text-align:center;font-weight:700;letter-spacing:2px;color:var(--bezelInk);font-size:13px;margin-bottom:8px}
+.dev{display:grid;grid-template-columns:1fr 132px;gap:14px}
+.screen{background:var(--scr);border:3px solid #1b232c;border-radius:6px;overflow:hidden;color:var(--scrInk);min-width:0;display:flex;flex-direction:column}
+.hdr{display:flex;align-items:stretch;background:var(--hdr);min-height:40px;color:#fff}
+.clock{padding:4px 10px;font-size:12px;opacity:.9;min-width:56px}
+.modeBlk{background:var(--modeBlk);color:var(--modeInk);border:0;padding:3px 16px 3px 12px;cursor:pointer;text-align:left;display:flex;align-items:baseline;gap:10px;min-width:220px}
+.modeBlk b{font-size:20px;font-weight:500;letter-spacing:.3px}
+.modeBlk small{font-size:12px}
+.alarm{flex:1;display:flex;align-items:center;padding:0 10px}
+.alarm span{background:#ffd400;color:#2a2000;font-weight:700;border-radius:3px;padding:2px 10px;font-size:13px;display:none}
+.alarm span.on{display:inline-block}
+.chat{align-self:center;margin-right:10px;border:1px solid rgba(255,255,255,.6);border-radius:4px;padding:1px 7px;font-size:12px;font-weight:650}
+.mid{display:grid;grid-template-columns:1fr 200px 118px;min-height:0;flex:1}
+.cv{position:relative;min-width:0;background:var(--screen)}
+canvas{display:block;width:100%;height:460px}
+.overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--scrMuted);font-size:15px;text-align:center;padding:20px;pointer-events:none}
+.banner{position:absolute;left:64px;right:10px;bottom:22px;display:none;background:var(--scrPanel);border:1px solid var(--scrLine);border-left:4px solid var(--knobSel);border-radius:6px;padding:6px 10px;font-size:13px}
+.banner.on{display:block}
+.frozen{position:absolute;right:10px;top:8px;display:none;background:#ffd400;color:#2a2000;border-radius:4px;padding:2px 8px;font-size:12px;font-weight:700}
+.frozen.on{display:block}
+.read{border-left:1px solid var(--scrLine);padding:6px 10px;display:flex;flex-direction:column;gap:2px;background:var(--scrPanel);overflow:hidden}
+.big{border-bottom:1px solid var(--scrLine);padding:2px 0 4px}
+.big .l{font-size:11.5px;font-weight:650}
+.big .l small{font-weight:400;color:var(--scrMuted);margin-left:3px}
+.big .v{font-size:34px;line-height:1.05;text-align:right;font-variant-numeric:tabular-nums;font-weight:500}
+.big.alert .v,.sm.alert .v{color:var(--warn)}
+.smg{display:grid;grid-template-columns:1fr 1fr;gap:2px 8px;margin-top:4px}
+.sm .l{font-size:10.5px;color:var(--scrMuted)}
+.sm .v{font-size:16px;font-variant-numeric:tabular-nums;font-weight:600;text-align:right}
+.soft{background:var(--scrPanel);border-left:1px solid var(--scrLine);padding:8px 6px;display:flex;flex-direction:column;gap:7px}
+.sk{background:var(--soft);color:var(--softInk);border:1px solid var(--softLine);border-radius:4px;padding:7px 4px;font-size:12px;cursor:pointer;line-height:1.2;text-align:center}
+.sk:hover{filter:brightness(1.1)}
+.sk.on{outline:2px solid var(--knobSel)}
+.sk:disabled{opacity:.45;cursor:default}
+.screen{position:relative}
+.modeRow{display:none;position:absolute;top:56px;left:50%;transform:translateX(-50%);z-index:20;flex-direction:column;gap:6px;padding:10px 12px 12px;background:var(--scrPanel);border:1px solid var(--scrLine);border-top:4px solid var(--modeBlk);border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,.35);min-width:270px}
+.modeRow.on{display:flex}
+.modeRow .mh{display:flex;justify-content:space-between;align-items:center;font-weight:650;font-size:13px;margin-bottom:2px}
+.modeRow .mh button{background:transparent;border:0;color:var(--scrMuted);font-size:16px;padding:0 4px}
+.modeRow button{text-align:left}
+.modeRow button.mb{background:var(--soft);color:var(--softInk);border:1px solid var(--softLine);border-radius:4px;padding:5px 12px;cursor:pointer}
+.modeRow button.mb.on{background:var(--modeBlk);color:var(--modeInk);border-color:var(--modeBlk);font-weight:650}
+.knobBar{background:var(--scrPanel);border-top:1px solid var(--scrLine);padding:4px 10px 8px}
+.kbHead{display:flex;gap:12px;align-items:baseline;font-size:13px}
+.kbHead b{font-weight:500;font-size:15px}
+.kbHead span{color:var(--scrMuted);font-size:11.5px}
+.knobs{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:4px}
+.kn{display:flex;flex-direction:column;align-items:center;width:72px;user-select:none;touch-action:none}
+.kn .k{position:relative;width:62px;height:62px;cursor:ns-resize;background:transparent;border:0;padding:0}
+.kn svg{position:absolute;inset:0}
+.kn .kv{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--knobInk);font-weight:650;font-size:15px;font-variant-numeric:tabular-nums}
+.kn .kv.s{font-size:12px}
+.kn .kl{font-size:12px;font-weight:600;margin-top:1px;text-align:center;line-height:1.1}
+.kn .ku{font-size:10px;color:var(--scrMuted)}
+.kn.chg .kl::after{content:" •";color:var(--ok)}
+.hard{display:flex;flex-direction:column;align-items:center;gap:10px;padding-top:40px}
+.hk{width:100%;background:#d8dde3;color:#2b3440;border:1px solid #b9c1cb;border-radius:6px;padding:7px 4px;font-size:12px;cursor:pointer}
+:root:not([data-theme="light"]) .hk{background:#39424d;color:#d4dbe3;border-color:#4b5562}
+.rotary{width:108px;height:108px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#ffffff,#cfd6dd 60%,#aeb7c1);border:6px solid #d9ec8f;box-shadow:0 3px 10px rgba(0,0,0,.3);cursor:grab;position:relative;touch-action:none}
+.rotary .dot{position:absolute;width:10px;height:10px;border-radius:50%;background:#7f8a96;left:44px;top:10px;transform-origin:5px 38px}
+.rotBtns{display:flex;gap:8px}
+.rotBtns button{width:40px;height:32px;border-radius:6px;border:1px solid var(--bezelLine);background:var(--panel2);cursor:pointer;font-size:18px}
+.selInfo{font-size:11.5px;color:var(--bezelInk);text-align:center;min-height:30px}
+.device.fs{position:fixed;inset:0;z-index:50;border-radius:0;overflow:auto}
+.device.fs canvas{height:calc(100vh - 290px) !important}
+
+@media (max-width:1100px){.mid{grid-template-columns:1fr 180px 104px}}
+@media (max-width:860px){
+  .dev{grid-template-columns:1fr}
+  .mid{grid-template-columns:1fr}
+  .read{border-left:0;border-top:1px solid var(--scrLine);display:grid;grid-template-columns:repeat(3,1fr);gap:4px 10px}
+  .big .v{font-size:24px}
+  .smg{grid-column:1/-1;grid-template-columns:repeat(4,1fr)}
+  .soft{flex-direction:row;flex-wrap:wrap;border-left:0;border-top:1px solid var(--scrLine)}
+  .sk{flex:1 1 30%}
+  .hard{flex-direction:row;flex-wrap:wrap;justify-content:center}
+  .hk{width:auto;flex:1 1 40%}
+  .rotary{width:80px;height:80px}
+  .rotary .dot{left:30px;top:6px;transform-origin:5px 28px}
+  .modeBlk{min-width:0}
+  .modeBlk b{font-size:16px}
+  .modeBlk small,.chat,.kbHead span{display:none}
+  .alarm{padding:0 6px}
+  .alarm span{font-size:11.5px}
+  .kbHead{display:block}
+  .rowlab{flex-basis:auto;width:100%}
+  .row{flex-wrap:wrap}
+}
+/* bilgi paneli */
+.info{margin-top:12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.card h3{margin:0 0 6px;font-size:13px;color:var(--accent);text-transform:uppercase;letter-spacing:.6px}
+.card p,.card ul{margin:0 0 6px}
+.card ul{padding-left:18px}
+.card li{margin:2px 0}
+.title{font-size:17px;font-weight:650;margin:0 0 2px}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12.5px;color:var(--muted);margin-top:8px}
+.legend i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:5px;vertical-align:middle}
+footer{margin-top:16px;color:var(--muted);font-size:12px}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1 data-i="h1">MV Asenkroni Simülatörü</h1>
+    <span class="sub" data-i="sub">Canlı akan ventilatör ekranı · ayarlanabilir ventilatör ve hasta</span>
+    <div class="seg" id="lang" title="Dil / Language"><button data-l="tr">TR</button><button data-l="en">EN</button></div>
+  </header>
+
+  <section class="top">
+    <div class="row"><span class="rowlab" data-i="rSenaryo">Senaryo</span><div class="chips" id="scenRow"></div></div>
+    <div class="row"><span class="rowlab" data-i="rHasta">Hasta</span><div class="ctls" id="patRow"></div></div>
+    <div class="row"><span class="rowlab" data-i="rGörünüm">Görünüm</span><div class="ctls">
+      <div class="seg" id="speed"><button data-s="0.5">0.5×</button><button data-s="1" class="on">1×</button><button data-s="2">2×</button></div>
+      <label class="chk"><input type="checkbox" id="cPmus" checked> <span data-i="cP">Pmus izi</span></label>
+      <label class="chk"><input type="checkbox" id="cMarks" checked> <span data-i="cM">Olay işaretleri</span></label>
+      <div class="mini"><div class="lab"><span data-i="dB">Dalga boyu</span><b id="vSize"></b></div><input type="range" id="rSize" min="300" max="900" step="20"></div>
+      <div class="mini"><div class="lab"><span data-i="zP">Zaman penceresi</span><b id="vWin"></b></div><input type="range" id="rWin" min="4" max="30" step="1"></div>
+      <span class="sep"></span>
+      <div class="save"><input id="presetName" placeholder="Ayar adı" data-ip maxlength="40"><button class="btn" id="bSave" data-i="bS">Ayarı kaydet</button></div>
+      <button class="btn danger" id="bReset" data-i="bR">Sıfırla</button>
+      <button class="btn primary" id="bFix" disabled>Ayarı düzelt</button>
+    </div></div>
+  </section>
+
+  <section class="device" id="vent">
+    <div class="brand" data-i="brand">MV-SİM 300</div>
+    <div class="dev">
+      <div class="screen">
+        <div class="hdr">
+          <span class="clock" id="clock"></span>
+          <button class="modeBlk" id="modeBlk" title="Ventilasyon modunu değiştir" data-it><b id="mName">BEKLEMEDE</b><small id="mSub"></small></button>
+          <div class="alarm"><span id="alarm"></span></div>
+          <span class="chat" id="chat" title="Chatburn mod sınıflaması" data-it></span>
+        </div>
+        <div class="mid">
+          <div class="cv">
+            <canvas id="cv"></canvas>
+            <div class="overlay" id="overlay" data-i="ov">Üstten bir senaryo seçin; dalga formları akmaya başlasın.</div>
+            <div class="banner" id="banner"></div>
+            <div class="frozen" id="frozen" data-i="fr">DONDURULDU</div>
+          </div>
+          <div class="read">
+            <div class="big flow"><div class="l">VE<small data-i="uMV">L/dk</small></div><div class="v" id="nMV">--</div></div>
+            <div class="big"><div class="l"><span data-i="lPk">Ptepe</span><small>cmH₂O</small></div><div class="v" id="nPpk">--</div></div>
+            <div class="big"><div class="l">VTe<small>mL</small></div><div class="v" id="nVt">--</div></div>
+            <div class="big"><div class="l">f<small data-i="uRR">/dk</small></div><div class="v" id="nRR">--</div></div>
+            <div class="big"><div class="l">FiO₂<small>%</small></div><div class="v" id="nFio">--</div></div>
+            <div class="smg">
+              <div class="sm"><div class="l" data-i="lPl">Pplato</div><div class="v" id="nPpl">--</div></div>
+              <div class="sm"><div class="l" data-i="lDP">ΔP sürüş</div><div class="v" id="nDP">--</div></div>
+              <div class="sm" id="tPeep"><div class="l">PEEP/PEEPi*</div><div class="v" id="nPeep">--</div></div>
+              <div class="sm"><div class="l">Cstat</div><div class="v" id="nCst">--</div></div>
+              <div class="sm"><div class="l">Ti s</div><div class="v" id="nTi">--</div></div>
+              <div class="sm"><div class="l">I:E</div><div class="v" id="nIE">--</div></div>
+              <div class="sm" id="tEff"><div class="l" data-i="lEf">Hasta eforu*</div><div class="v" id="nEff">--</div></div>
+              <div class="sm" id="tTrg" title="Tetik için gereken kas basıncı: PEEPi + tetik eşiği" data-it><div class="l" data-i="lTr">Tetik eforu*</div><div class="v" id="nTrg">--</div></div>
+            </div>
+          </div>
+          <div class="soft">
+            <button class="sk" id="skMode" data-i="skM">Ventilasyon modu…</button>
+            <button class="sk" id="bPause" disabled>Dalgaları dondur</button>
+            <button class="sk" id="bIHold" disabled data-i="bIH">İnspiratuvar tutma</button>
+            <button class="sk" id="bEHold" disabled data-i="bEH">Ekspiratuvar tutma</button>
+            <button class="sk" id="skDay" data-i="skD">Gündüz / Gece</button>
+            <button class="sk" id="bFs">Tam ekran</button>
+          </div>
+        </div>
+        <div class="modeRow" id="modeRow"></div>
+        <div class="knobBar">
+          <div class="kbHead"><b id="kbMode">--</b><span data-i="kbH">Düğmeyi seçin, sonra döner düğmeyle, fare tekerleğiyle, sürükleyerek ya da ok tuşlarıyla ayarlayın</span></div>
+          <div class="knobs" id="knobs"></div>
+        </div>
+      </div>
+      <div class="hard">
+        <div class="rotary" id="rotary" title="Seçili ayarı çevirerek değiştirin" data-it><div class="dot" id="rotDot"></div></div>
+        <div class="rotBtns"><button id="kMinus" aria-label="Azalt" data-ia>−</button><button id="kPlus" aria-label="Artır" data-ia>+</button></div>
+        <div class="selInfo" id="selInfo">Ayar seçilmedi</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="info" id="info">
+    <div class="card" style="grid-column:1/-1" data-i="howto">
+      <p class="title">Nasıl kullanılır?</p>
+      <p>Üst satırdan bir senaryo seçin; ekran gerçek bir ventilatör gibi soldan sağa tarar. Ventilatör ayarları ekranın altındaki yuvarlak düğmelerdedir: bir düğmeye tıklayın (sarı halka), sonra sağdaki döner düğmeyi çevirin ya da fare tekerleği, sürükleme veya ok tuşlarıyla değiştirin. Modu turuncu kutudan ya da <b>Ventilasyon modu…</b> tuşundan değiştirin. Hasta mekaniği ve eforu üstteki <b>Hasta</b> satırındadır. Mor iz hastanın kas eforudur (Pmus); gerçek ventilatörde görünmez, öğretim için gösterilir.</p>
+      <div class="legend"><span><i style="background:var(--paw)"></i>Basınç (Paw)</span><span><i style="background:var(--flow)"></i>Akım</span><span><i style="background:var(--vol)"></i>Hacim</span><span><i style="background:var(--pmus)"></i>Hasta eforu (Pmus)</span><span>▲ mor: hasta tetikledi · ▲ gri: zaman tetiklemeli</span><span>Kesikli mor çizgi (VKV): pasif hastada olacak basınç; aradaki gölge hastanın işi</span><span>Boşluk: dondur · F: tam ekran</span></div>
+    </div>
+  </section>
+
+  <footer data-i="foot">
+    <p style="margin:0 0 6px">Eğitim amaçlıdır, klinik karar için kullanılmaz. Ekran düzeni yoğun bakım ventilatörlerinden esinlenmiştir; herhangi bir üreticinin ürünü değildir. Model: tek kompartman hareket denklemi (Paw = Akım×R + Hacim×E + PEEP − Pmus) ve hasta kas basıncı; gaz değişimi modellenmez (FiO₂ yalnızca gösterilir). * işaretli değerler modelden gelir; gerçek ventilatör bunları doğrudan ölçmez.</p>
+    <p style="margin:0 0 2px"><b>Kaynaklar</b></p>
+    <ol style="margin:0;padding-left:18px">
+      <li>Murias G, Lucangelo U, Blanch L. Patient-ventilator asynchrony. <i>Curr Opin Crit Care</i> 2016;22:53–59.</li>
+      <li>Hamilton Medical. Patient-ventilator asynchrony reference card (ELO2019041N.04), 2023.</li>
+      <li>Tonetti T, Merola R, Gregoretti C, Ranieri VM. Patient–ventilator interaction. <i>Textbook of Critical Care</i>, Bölüm 54, s. 393–399.</li>
+      <li>Hess DR, Kacmarek RM. Patient-ventilator interaction. <i>Essentials of Mechanical Ventilation</i>, Bölüm 15, s. 153–166.</li>
+    </ol>
+  </footer>
+</div>
+
+<script>
+// ---- Simülasyon motoru: tek kompartman + hasta kası (Pmus) + ventilatör ----
+// Birimler: basınç cmH2O, hacim L, akım L/s (ekranda L/dk ve mL).
+// Palv = E·V − Pmus  (V: gevşek FRC üstü hacim). Pmus>0 inspiratuvar, <0 ekspiratuvar kas.
+function makeSim(sc) {
+  const p = JSON.parse(JSON.stringify(sc));
+  const S = {
+    p, t: 0, V: p.PEEP / (1000 / p.C), phase: 'exp', phaseStart: 0,
+    Vtid: 0, Fpeak: 0, breaths: [], efforts: [], events: [],
+    nextEffort: 0.6, lastBreath: -10, curBreath: null, out: {},
+    tiHist: [], seed: 7, etsT: 0, holdReq: null, meas: {}, revCount: 0, prvcP: p.Pinsp
+  };
+  S.rand = () => { S.seed = (S.seed * 16807) % 2147483647; return S.seed / 2147483647; };
+  return S;
+}
+
+function effortPmus(e, t) {
+  const x = t - e.start;
+  if (x < 0) return 0;
+  let v;
+  if (x < e.ti) v = e.pmax * (1 - Math.cos(Math.PI * x / e.ti)) / 2;
+  else v = e.pmax * Math.exp(-(x - e.ti) / 0.12);
+  if (e.push) {
+    const y = x - e.pushAt;
+    if (e.pushAt != null && y > 0) {
+      // yumuşak (sinüzoidal) yükselme: çıkıntı T dalgası gibi geniş ve yuvarlak olsun
+      let k = y < 0.45 ? Math.sin(Math.PI * y / 0.45) : 0;
+      if (e.pushEnd != null) k *= Math.exp(-Math.max(0, x - e.pushEnd) / 0.08);
+      v -= e.push * k;
+    }
+  }
+  return v;
+}
+
+function newEffort(S, start, def) {
+  const j = 1 + (S.rand() - 0.5) * 2 * (def.jitter || 0.05);
+  const e = { start, ti: def.ti * j, pmax: def.pmax * (1 + (S.rand() - 0.5) * 0.25),
+    triggered: false, peakPhase: null, push: def.expPush || 0, pushAt: null, reverse: !!def.reverse, flagged: false };
+  S.efforts.push(e);
+  return e;
+}
+
+function startBreath(S, kind) {
+  const t = S.t, p = S.p;
+  const prev = S.breaths[S.breaths.length - 1];
+  const b = { start: t, kind, Ppeak: 0, Vti: 0, Vte: 0, end: null, peepi: Math.max(0, (1000 / p.C) * S.V - p.PEEP) };
+  // tetikleyen efor
+  let eff = null;
+  for (const e of S.efforts) if (t >= e.start && t <= e.start + e.ti + 0.05) eff = e;
+  if (kind === 'trig') {
+    if (!eff) {
+      kind = b.kind = 'auto';
+      S.events.push({ t, type: 'OTO', ch: 'paw' });
+    } else {
+      const delay = t - eff.start;
+      // aynı efor bir önceki solukla da tetiklenmişse → çift tetikleme
+      if ((eff.triggered || eff.reverse) && prev) {
+        S.events.push({ t, type: 'ÇİFT', ch: 'flow' });
+        b.kind = 'double';
+      } else if (delay > 0.3) {
+        S.events.push({ t: eff.start, t2: t, type: 'GECİKME', ch: 'flow' });
+      }
+      eff.triggered = true;
+      b.eff = eff;
+    }
+  }
+  if (prev && prev.end == null) prev.end = t;
+  S.breaths.push(b);
+  S.curBreath = b; S.phase = 'insp'; S.phaseStart = t; S.Vtid = 0; S.Fpeak = 0; S.lastBreath = t; S.etsT = 0;
+  if (p.reverse && p.reverse.ratio && kind === 'time') {
+    const r = p.reverse;
+    if (S.revCount++ % (r.ratio || 1) === 0) newEffort(S, t + r.delay * (1 + (S.rand() - 0.5) * 0.15), { ti: r.ti, pmax: r.pmax, jitter: 0.08, reverse: true });
+  }
+}
+
+// inspiryum gaz verme bitti: inspiratuvar duraklama / tutma varsa önce ona geç
+function endFlow(S) {
+  const p = S.p;
+  if (S.holdReq === 'insp') { S.holdReq = null; S.phase = 'pause'; S.pauseEnd = S.t + 1.5; S.pauseHold = true; S.phaseStart = S.t; return; }
+  if (p.mode === 'VCV' && p.pause > 0) { S.phase = 'pause'; S.pauseEnd = S.t + p.pause; S.pauseHold = false; S.phaseStart = S.t; return; }
+  endInsp(S);
+}
+
+function endInsp(S) {
+  S.phase = 'exp'; S.phaseStart = S.t;
+  const b = S.curBreath; b.Vti = S.Vtid; b.ti = S.t - b.start;
+  for (const e of S.efforts) if (e.pushAt != null && e.pushEnd == null) e.pushEnd = S.t - e.start;
+  S.tiHist.push(b.ti); if (S.tiHist.length > 6) S.tiHist.shift();
+  // PRVC: bir sonraki soluğun basıncı, bu soluğun hacmine göre adım adım ayarlanır (adım ≤ 3 cmH2O)
+  if (S.p.mode === 'PRVC' && b.Vti > 0.02) {
+    const old = S.prvcP;
+    S.prvcP = Math.max(2, Math.min(35, old + Math.max(-3, Math.min(3, old * (S.p.Vt / b.Vti - 1)))));
+    const effort = S.efforts.some(e => e.start < S.t && e.start + e.ti > b.start && !e.reverse);
+    // destek, pasif hastada hedef VT için gereken basıncın çok altına inmişse de işaretle
+    const need = S.p.Vt * 1000 / S.p.C;
+    if (effort && (old - S.prvcP > 0.5 || S.prvcP < 0.6 * need)) S.events.push({ t: S.t, type: 'DESTEK ↓', ch: 'paw' });
+  }
+  // aktif efor hâlâ sürüyor mu → erken döngü
+  for (const e of S.efforts) {
+    const neuralEnd = e.start + e.ti;
+    if (e.start < S.t && neuralEnd - S.t > 0.15 && S.p.mode === 'PSV') S.events.push({ t: S.t, type: 'ERKEN DÖNGÜ', ch: 'flow' });
+  }
+}
+
+function step(S, dt) {
+  const p = S.p, E = 1000 / p.C, t = S.t;
+  // yeni spontan efor planla
+  if (p.pt && p.pt.rr && t >= S.nextEffort) {
+    newEffort(S, t, p.pt);
+    S.nextEffort = t + (60 / p.pt.rr) * (1 + (S.rand() - 0.5) * 2 * (p.pt.jitter || 0.06));
+  }
+  let pmus = 0;
+  for (const e of S.efforts) {
+    // geç döngü: nöral inspiryum bittiği hâlde makine hâlâ inspiryumdaysa ekspiratuvar kas kasılır
+    if (e.push && e.pushAt == null && S.phase === 'insp' && t > e.start + e.ti + 0.45 && S.curBreath.start < e.start + e.ti) e.pushAt = t - e.start;
+    pmus += effortPmus(e, t);
+  }
+  const Palv = E * S.V - pmus;
+  const cardiac = p.cardiac ? p.cardiac * Math.sin(2 * Math.PI * (p.hr || 100) / 60 * t) : 0;
+  let F, Paw;
+  const ti = t - S.phaseStart;
+  if (S.phase === 'insp') {
+    if (p.mode === 'VCV') {
+      const Fpk = p.Fset / 60;
+      if (p.pattern === 'decel') {
+        // doğrusal azalan akım: tepe akımdan sıfıra, Ti = 2·Vt / tepe akım
+        const Tdec = 2 * p.Vt / Fpk;
+        F = Math.max(0.05 * Fpk, Fpk * (1 - ti / Tdec));
+      } else F = Fpk;
+      Paw = F * p.R + Palv;
+      S.curBreath.Ppeak = Math.max(S.curBreath.Ppeak, Paw);
+      if (S.Vtid >= p.Vt) endFlow(S);
+    } else {
+      const P = p.mode === 'PSV' ? p.PS : p.mode === 'PRVC' ? S.prvcP : p.Pinsp;
+      const Pt = p.PEEP + P * Math.min(1, ti / p.rise);
+      F = (Pt - Palv) / p.R;
+      Paw = Pt;
+      if (F < 0) { F = (Pt - Palv) / (p.R + 15); Paw = Pt - 15 * F; }
+      if (F > S.Fpeak) S.Fpeak = F;
+      S.curBreath.Ppeak = Math.max(S.curBreath.Ppeak, Paw);
+      if (p.mode === 'PSV') {
+        // basınç döngüsü güvenlik sınırı: hasta ventilatöre karşı üflerse
+        if (Paw > Pt + 1.5 && !S.curBreath.spike) { S.curBreath.spike = true; S.events.push({ t, type: 'BASINÇ ÇIKINTISI', ch: 'paw' }); }
+        if (Paw > Pt + 10 && ti > 0.15) endFlow(S);
+        else if (ti > (p.maxTi || 2.5)) endFlow(S);
+        else if (ti > 0.12 && F < S.Fpeak * p.ETS / 100) {
+          S.etsT += dt;
+          if (S.etsT > (p.etsLag || 0.04)) endFlow(S);
+        } else S.etsT = 0;
+      } else if (ti >= p.Ti) endFlow(S);
+    }
+  }
+  // duraklama / inspiratuvar ve ekspiratuvar tutma: valfler kapalı, akım yok, Paw = Palv
+  if (S.phase === 'pause' || S.phase === 'ehold') {
+    F = 0; Paw = Palv;
+    if (S.phase === 'pause') {
+      if (t >= S.pauseEnd) {
+        S.curBreath.Pplat = Palv;
+        if (S.pauseHold) S.meas.ihold = { pplat: Palv, t, vt: S.Vtid };
+        endInsp(S);
+      }
+    } else if (t >= S.pauseEnd) {
+      S.meas.ehold = { peepTot: Palv, t };
+      S.phase = 'exp'; startBreath(S, 'time');
+      F = 0; Paw = Palv;
+    }
+  }
+  if (S.phase === 'exp') {
+    const Rv = 1.5;
+    if (p.PEEP >= Palv) {
+      // hasta gaz çekiyor: basınç tetiğinde talep valfi kapalıdır, hava yolu basıncı düşer
+      const Rin = p.trigType === 'pressure' ? 10 : Rv;
+      F = (p.PEEP - Palv) / (p.R + Rin);
+      Paw = p.PEEP - Rin * F;
+    } else {
+      // akım kısıtlılığı: küçük hava yolları kritik basınçta kapanır; ekspiryumu PEEP değil
+      // max(PEEP, Pkrit) sürer. Bu yüzden Pkrit altındaki dış PEEP ekspiratuvar akımı değiştirmez.
+      const D = Math.max(p.PEEP, p.Pcrit || 0);
+      F = Palv > D ? (D - Palv) / (p.R * (p.Rexp || 1) + Rv) : 0;
+      Paw = p.PEEP - Rv * F;
+    }
+  }
+  const Fm = F + cardiac;
+  Paw += cardiac * 4;
+  S.V += F * dt;
+  if (S.phase === 'insp') { S.Vtid += F * dt; S.curBreath.Ppeak = Math.max(S.curBreath.Ppeak, Paw); }
+  else if (S.phase === 'exp' && S.curBreath) S.curBreath.Vte -= F * dt;
+  // tetikleme
+  if (S.phase === 'exp') {
+    const sinceExp = t - S.phaseStart;
+    const trig = p.trigType === 'pressure' ? Paw < p.PEEP - p.trigP : Fm * 60 > p.trig;
+    let kind = null;
+    if (sinceExp > (p.refr || 0.18) && trig) kind = 'trig';
+    else if (p.rate && t - S.lastBreath >= 60 / p.rate) kind = 'time';
+    else if (S.holdReq === 'exp' && !p.rate && sinceExp > 2.5) kind = 'time';
+    if (kind && S.holdReq === 'exp') { S.holdReq = null; S.phase = 'ehold'; S.phaseStart = t; S.pauseEnd = t + 1.5; }
+    else if (kind) startBreath(S, kind);
+  }
+  // geç döngü (akım işareti): hastanın nöral inspiryumu bitti, makine hâlâ veriyor
+  if (S.phase === 'insp' && S.curBreath.eff && !S.curBreath.lateFlag && p.mode !== 'VCV' && t > S.curBreath.eff.start + S.curBreath.eff.ti + 0.3) {
+    S.curBreath.lateFlag = true; S.events.push({ t, type: 'GEÇ DÖNGÜ', ch: 'flow' });
+  }
+  // akım açlığı: VKV'de inspiryum sırasında güçlü efor
+  if (S.phase === 'insp' && p.mode === 'VCV' && pmus > 4 && !S.curBreath.starve) {
+    S.curBreath.starve = true; S.events.push({ t, type: 'AKIM AÇLIĞI', ch: 'paw' });
+  }
+  // efor sonlandı: etkisiz mi, ters tetikleme mi?
+  for (const e of S.efforts) {
+    if (e.peakPhase == null && t >= e.start + e.ti * 0.6) e.peakPhase = S.phase;
+    if (!e.flagged && t > e.start + e.ti) {
+      e.flagged = true;
+      if (e.reverse) S.events.push({ t: e.start + e.ti * 0.5, type: 'TERS TETİK', ch: 'pmus' });
+      else if (!e.triggered && e.peakPhase === 'exp') S.events.push({ t: e.start + e.ti * 0.5, type: 'ETKİSİZ EFOR', ch: 'flow' });
+    }
+  }
+  if (S.efforts.length > 20) S.efforts.splice(0, S.efforts.length - 20);
+  if (S.breaths.length > 40) S.breaths.splice(0, S.breaths.length - 40);
+  if (S.events.length > 60) S.events.splice(0, S.events.length - 60);
+  // pasif hastada aynı akım ve hacimle oluşacak basınç (VKV): aradaki fark hastanın işidir
+  const pawp = p.mode === 'VCV' && (S.phase === 'insp' || (S.phase === 'pause' && !S.pauseHold)) ? Paw + pmus : NaN;
+  S.out = { pawp, paw: Paw, flow: Fm * 60, vol: (S.phase === 'insp' || S.phase === 'pause' ? S.Vtid : Math.max(0, (S.curBreath ? S.curBreath.Vti - S.curBreath.Vte : 0))) * 1000, pmus, palv: Palv };
+  S.t = t + dt;
+}
+
+
+
+
+// ---- Senaryolar ----
+const GROUPS = [
+  ['Normal', ['normal_psv', 'normal_vcv']],
+  ['Tetikleme', ['iie', 'delay', 'auto', 'peepi']],
+  ['Gaz verme', ['starve', 'prvc']],
+  ['Sonlanma (döngü)', ['double', 'early', 'late']],
+  ['Diğer', ['reverse', 'reverse_vc', 'stack']],
+];
+
+const SCEN = {
+  normal_psv: {
+    name: 'Normal – Basınç destek', short: 'PSV, senkron soluk',
+    p: { mode: 'PSV', PEEP: 5, PS: 10, rise: 0.15, ETS: 25, trig: 2, C: 50, R: 10, pt: { rr: 16, pmax: 6, ti: 0.9, jitter: 0.08 } },
+    marks: [],
+    look: ['Her hasta eforu (mor iz) bir soluğu tetikler; tetik anında basınçta küçük bir çentik olur.', 'Akım soluk sonunda sıfıra iner (auto-PEEP yok).', 'Soluk, hastanın eforu bitince akım ETS eşiğine düşerek sonlanır.'],
+    mech: "İnspiratuvar kas kasılması alveol basıncını düşürür, gaz hava yolundan alveole akar, hava yolu basıncı düşer ve eşik aşılınca ventilatör tetiklenir. Hasta ventilatörü ancak bu zincir üzerinden etkileyebilir. Hareket denklemi: Pmus + Pventilatör = Akım×R + Hacim×E + PEEPi. PSV'de akım hastanın talebine göre değişir, bu yüzden efor ile verilen hacim arasındaki eşleşme korunur.",
+    causes: null,
+  },
+  normal_vcv: {
+    name: 'Normal – Volüm kontrol (pasif)', short: 'Sedatize, zaman tetiklemeli',
+    p: { mode: 'VCV', PEEP: 5, Vt: 0.45, Fset: 50, pause: 0.3, rate: 14, trig: 2, C: 50, R: 10 },
+    marks: [],
+    look: ['Kare akım: inspiryum boyunca sabit akım.', 'Basınç doğrusal yükselir (Akım×R basamağı + Hacim×E rampası).', '0.3 s inspiratuvar duraklamada akım sıfırdır; basınç tepe değerden plato basıncına iner. Ptepe − Pplato direnci, Pplato − PEEP kompliyansı yansıtır.', 'Hasta eforu yok, tüm soluklar zaman tetiklemeli (gri ▲).'],
+    mech: "Pasif hastada basınç tamamen hareket denklemiyle belirlenir: Paw = Akım×R + Hacim×E + PEEP. VKV'de akım ve hacim sabittir; hasta efor yapsa bile değişmez, yalnızca basınç değişir. Asenkroni senaryolarındaki sapmaları bu referansla karşılaştırın.",
+    causes: null,
+  },
+  iie: {
+    name: 'Etkisiz inspiratuvar efor', short: 'En sık asenkroni',
+    p: { mode: 'PSV', PEEP: 5, PS: 18, rise: 0.15, ETS: 15, trig: 3, C: 55, R: 20, maxTi: 2.5, pt: { rr: 28, pmax: 6, ti: 0.7, jitter: 0.1 } },
+    fix: { PS: 10, ETS: 40, trig: 2 }, fixText: 'PS 18→10, ETS %15→40, tetik 3→2 L/dk',
+    marks: ['ETKİSİZ EFOR'],
+    look: ['Ekspiryum sırasında akım eğrisinde ani azalma veya çentik, ardından soluk gelmez.', 'Basınç eğrisi neredeyse değişmez.', 'Ekspiryum sonu akım sıfıra inmeden yeni soluk başlar (auto-PEEP).', 'Ventilatörün gösterdiği frekans hastanın gerçek efor sayısından düşüktür.'],
+    mech: "Efor alveol basıncını düşürür; ekspirasyonu süren basınç farkı azalır ve ekspiratuvar akım yavaşlar. Hava yolundaki gaz miktarı değişmediği için basınç eğrisi neredeyse değişmez. Efor auto-PEEP + tetik eşiğini aşamaz. Arka arkaya iki ekspiryum auto-PEEP'i kendiliğinden sınırlar. Etkisiz efor, eforun büyüklüğüyle değil destek düzeyiyle ilişkilidir: A/C ya da yüksek PS'de eforların 1/4–1/3'ü tetikleyemeyebilir.",
+    causes: ["Ventilatör: yüksek destek (PS, Vt), uzun Ti ya da yüksek set frekans nedeniyle kısa ekspiryum süresi, yüksek tetik eşiği", "Hasta mekaniği: yüksek direnç, düşük elastans (yüksek kompliyans), auto-PEEP", "Düşük solunum dürtüsü, sedasyon"],
+    fixNote: "Daha kısa ve daha küçük soluk ekspiryuma zaman bırakır; eforların hepsi tetikler. Kalan gecikme bu hastadaki auto-PEEP'ten gelir: auto-PEEP'in altında kalan dış PEEP, tetik için gereken eforu da azaltır (Auto-PEEP ve dış PEEP senaryosu). Auto-PEEP varken tetiği daha duyarlı yapmak tek başına yetmez.",
+  },
+  delay: {
+    name: 'Gecikmeli tetikleme', short: 'Efor ile destek arası uzun',
+    p: { mode: 'PSV', PEEP: 5, PS: 12, rise: 0.15, ETS: 25, trig: 8, C: 50, R: 18, pt: { rr: 22, pmax: 8, ti: 0.8, jitter: 0.06 } },
+    fix: { trig: 2, ETS: 40 }, fixText: 'Tetik 8→2 L/dk, ETS %25→40',
+    marks: ['GECİKME'],
+    look: ['Mor efor başladıktan belirgin süre sonra soluk başlar.', 'Bu arada akım ekspiratuvardan sıfıra doğru çekilir; basınç hemen değişmez.', 'Ekspiryum sonu akım sıfıra inmez (auto-PEEP).'],
+    mech: "Efor FRC'ye varılmadan başlarsa ilk kısmı yalnızca auto-PEEP'i dengelemeye harcanır; tetik ancak bundan sonra gelir. Hızlı bir tetikte bile tetik eforu toplam inspiratuvar eforun %12–17'si kadardır. Basınç hastada değil ventilatörün içinde ölçüldüğü için tüp direnci tetik duyarlılığını ayrıca azaltır. Destek arttıkça dürtü azalır ama tetikleme süresi uzar.",
+    causes: ["Ventilatör: yüksek tetik eşiği, yavaş tetik yanıtı (pnömatik gecikme), yüksek destek", "Hasta: auto-PEEP, düşük dürtü, zayıf efor", "Arayüz: endotrakeal tüp direnci"],
+    fixNote: "Duyarlı tetik ve daha erken döngü (daha uzun ekspiryum, daha az auto-PEEP) gecikmeyi kısaltır. Akım tetiği basınç tetiğine göre tetik fazını kısaltır, ama tetik sonrası efor değişmez.",
+  },
+  auto: {
+    name: 'Otomatik tetikleme', short: 'Efor olmadan soluk',
+    p: { mode: 'PSV', PEEP: 5, PS: 10, rise: 0.15, ETS: 25, trig: 0.5, C: 50, R: 10, cardiac: 0.045, hr: 110, refr: 0.6, pt: { rr: 8, pmax: 4, ti: 0.9 } },
+    fix: { trig: 3 }, fixText: 'Tetik 0.5→3 L/dk',
+    marks: ['OTO'],
+    look: ['Soluk başında basınçta düşüş yok: hasta çekmeden soluk geliyor.', 'Akım eğrisinde kalp atımıyla senkron küçük salınımlar.', 'Mor efor olmadan soluklar; toplam frekans hastanın eforundan çok yüksek.'],
+    mech: "Ventilatör, hasta eforu dışındaki bir sinyali (kardiyak osilasyon, kaçak, devredeki su) efor sanar ve zorunlu soluk verir. Ventilatörün saydığı soluk sayısı hastanın gerçek solunum sayısından fazladır. Kalp atımı 4–6 L/dk'lık akım dalgalanması yapabilir; 2 L/dk gibi duyarlı bir akım tetiği bunu efor sayar.",
+    causes: ["Ventilatör: tetik eşiği çok duyarlı; NIV'de kaçak kompanzasyonu", "Arayüz: kaçak, devrede su veya sekresyon, bronkoplevral fistül", "Hasta: kardiyak osilasyonlar"],
+    fixNote: 'Daha az duyarlı tetikle yalnızca gerçek eforlar soluk başlatır. Tetik, oto-tetikleme yapmayan en duyarlı değere ayarlanır. Gerçekte kaçağı ve devredeki suyu da kontrol edin.',
+  },
+  peepi: {
+    name: 'Auto-PEEP ve dış PEEP', short: 'Akım kısıtlılığında tetiklemek',
+    p: { mode: 'VCV', PEEP: 3, Vt: 0.45, Fset: 60, rate: 12, trig: 2, C: 55, R: 15, Rexp: 1.2, Pcrit: 9, pt: { rr: 16, pmax: 7, ti: 0.8, jitter: 0.08 } },
+    fix: { PEEP: 8 }, fixText: 'PEEP 3→8 (PEEPtot\'un yaklaşık %80\'i)',
+    marks: ['ETKİSİZ EFOR', 'GECİKME'],
+    look: ['Ekspiryum sonunda akım sıfıra inmez; efor geldiğinde akım önce sıfıra çekilir, soluk ancak sonra gelir ya da hiç gelmez.', 'Sağdaki Tetik eforu* değeri yüksek: hasta her solukta önce auto-PEEP\'i yenmek zorunda.', 'Eksp. tut ile PEEPtot\'u ölçün; dış PEEP\'i artırdıktan sonra tekrar ölçün. PEEPtot neredeyse değişmez, Ptepe de artmaz.'],
+    mech: "Akım kısıtlılığında küçük hava yolları ekspiryumda kritik bir basınçta kapanır; alveoldeki basınç bu düzeyin altına inemez ve auto-PEEP oluşur. Hasta tetik için önce auto-PEEP'i, sonra tetik eşiğini aşmalıdır: auto-PEEP 10 ve tetik −1 cmH₂O ise 11 cmH₂O efor gerekir. Dış PEEP kritik basıncın altında kaldıkça ekspiratuvar akımı engellemez, ama hava yolu ile alveol arasındaki farkı kapatır: dış PEEP 7'ye çıkınca gereken efor 4 cmH₂O'ya iner. Auto-PEEP varken akım tetiği basınç tetiğinden üstün değildir; tetiği duyarlı yapmak sorunu çözmez.",
+    causes: ["Hasta: ekspiratuvar akım kısıtlılığı (KOAH, astım), uzun zaman sabiti", "Ventilatör: yüksek dakika ventilasyonu, yüksek Vt ya da PS, kısa ekspiryum süresi", "Dış PEEP'in auto-PEEP'e göre düşük olması"],
+    fixNote: "Dış PEEP PEEPtot'un yaklaşık %80'ine çıkınca eforların hepsi tetikler ve gecikme kısalır; hiperinflasyon artmaz. VKV'de PEEP eklenince Ptepe yükseliyorsa akım kısıtlılığı yoktur ya da PEEP fazladır, aşırı şişme olur: PEEP geri alınır. Diğer yollar: dakika ventilasyonunu azaltmak, ekspiryumu uzatmak, bronkodilatör. Hasta satırındaki Akım kısıtlılığı ayarını sıfıra çekip aynı PEEP artışını deneyin: bu kez PEEPtot ve Ptepe de yükselir.",
+  },
+  prvc: {
+    name: 'PRVC\'de destek azalması', short: 'Hasta çektikçe basınç düşer',
+    p: { mode: 'PRVC', PEEP: 5, Vt: 0.45, Pinsp: 15, Ti: 0.9, rate: 12, rise: 0.1, trig: 2, C: 50, R: 10, pt: { rr: 20, pmax: 9, ti: 1.0, jitter: 0.06 } },
+    fix: { mode: 'PSV', PS: 8, ETS: 25, rate: 0 }, fixText: 'PRVC → PSV 8 (sabit destek)',
+    marks: ['DESTEK ↓'],
+    look: ['İlk soluklarda basınç yüksek; hasta güçlü çektiği için VT hedefi aşar.', 'Ventilatör her solukta ΔPinsp\'i düşürür (düğmelerin yanında güncel değer); basınç eğrisi neredeyse PEEP düzeyine iner.', 'VT hedefte kalır, ama hacmi artık neredeyse tamamen hastanın kası (mor iz) sağlar.'],
+    mech: "Adaptif volüm modları (PRVC, volüm destek) solunan hacmi ölçer ve hedef VT aşılınca bir sonraki soluğun basıncını düşürür. Güçlü eforlu hastada bu, ventilatörün tam ihtiyaç anında desteği geri çekmesi demektir: hasta ne kadar çekerse o kadar az destek alır ve iş yükü artar. Bu bir akım uyumsuzluğudur; en zararlı asenkroniler arasında sayılır.",
+    causes: ["Ventilatör: yüksek dürtülü hastada adaptif volüm hedefli mod, düşük hedef VT", "Hasta: yüksek ventilasyon talebi (asidoz, ağrı, anksiyete, sepsis)"],
+    fixNote: "Sabit basınçlı destekte akım talebe göre artar ve destek geri çekilmez. Hedef VT'yi artırmak da bir seçenektir, ama Pplato ≤ 30 ise VT 8 mL/kg'a kadar çıkılabilir. Talebin nedeni (ağrı, asidoz) ayrıca araştırılır.",
+  },
+  starve: {
+    name: 'Akım açlığı', short: 'VKV, yetersiz akım',
+    p: { mode: 'VCV', PEEP: 5, Vt: 0.45, Fset: 30, rate: 12, trig: 2, C: 45, R: 10, pt: { rr: 24, pmax: 14, ti: 0.9, jitter: 0.12 } },
+    fix: { mode: 'PSV', PS: 8, rise: 0.1, ETS: 25 }, fixText: 'VKV → PSV 8 cmH₂O',
+    marks: ['AKIM AÇLIĞI'],
+    look: ['Basınç eğrisinde inspiryum sırasında içe çökme (yukarı konkavite); pasif VKV\'deki düz rampanın yerine.', 'Güçlü eforda basınç PEEP\'in altına inebilir.', 'Akım kare ve sabit: hastanın talebi artsa da değişmiyor.', 'Kesikli mor çizgi pasif hastadaki basınçtır; gerçek eğriyle arasındaki gölgeli alan hastanın yaptığı iştir.', 'Ptepe soluktan soluğa değişir, çünkü her soluktaki efor farklıdır.'],
+    mech: "Akım sabitlendiğinde basınç eğrisinin eğimi, verilen akımın hastanın istediği akıma oranını yansıtır. Basınç PEEP'in altına iniyorsa ventilatör yük ekliyordur. Akımı artırmak dürtüyü ve kas işini azaltır, ama solunum hızını artırabilir. Basınç hedefli solukta akım bağımlı değişkendir ve talebe göre artar; bu yüzden talebe daha iyi uyar. Akım uyumsuzluğu en zararlı asenkronilerdendir.",
+    causes: ["Ventilatör: VKV'de akım çok düşük; basınç modlarında rampa çok yavaş", "Hasta: yüksek efor ve ventilasyon talebi", "Mod seçimi"],
+    fixNote: 'Basınç hedefli modda akım talebe göre artar; basınç eğrisi düzleşir. Bu hastada Vt büyür, dürtü yüksektir. VKV\'de kalınacaksa akım artırılır ya da azalan paterne geçilir (Akım düğmesini 30→60 yapıp gölgeli alanın küçüldüğünü izleyin). Güçlü eforda basınç modu transpulmoner basıncı ayarlanan basıncın çok üstüne çıkarabilir; bunu da izleyin.',
+  },
+  double: {
+    name: 'Çift tetikleme', short: 'Arka arkaya iki soluk',
+    p: { mode: 'VCV', PEEP: 5, Vt: 0.40, Fset: 60, rate: 12, trig: 2, C: 40, R: 10, pt: { rr: 20, pmax: 12, ti: 1.2, jitter: 0.05 } },
+    fix: { Fset: 40, pattern: 'decel', pause: 0.3 }, fixText: 'Akım 60→40 L/dk, azalan patern, Tplato 0.3 s',
+    marks: ['ÇİFT'],
+    look: ['Tek eforda iki soluk; aradaki ekspiryum ortalama Ti\'nin yarısından kısa.', 'İkinci solukta hacim yığılır, tepe basınç yükselir (VKV\'de Vt yaklaşık iki katı).', 'Ekspiryum başında akım hızla tersine dönüp yeniden tetikler.'],
+    mech: "Hastanın nöral inspiryum süresi ventilatörünkinden uzun. Makine döngüye girdiğinde hasta hâlâ çeker; talep yüksekse ikinci tetik gelir. İki soluk arasında ekspiryum çok kısadır ve hacim yığılır (breath stacking). Erken döngüyle aynı olayın ağır hâlidir. Ters tetik ve akım uyumsuzluğuyla birlikte en zararlı asenkronilerdendir.",
+    causes: ["Ventilatör: zaman döngülü modda kısa Ti; akım döngülü modda yüksek ETS; düşük PS; kısa rampa; akım açlığı", "Hasta: yüksek ventilasyon talebi ve dürtü, kısa zaman sabiti, ters tetikleme"],
+    fixNote: "Üç değişiklik de VKV'de Ti'yi uzatır (0.4 s → yaklaşık 1.5 s) ve soluk hastanın nöral inspiryumu kadar sürer; tek efor tek soluk olur. PKV'de Ti uzatılır, PSV'de ETS düşürülür. Ayarla düzelmezse dürtü farmakolojik olarak baskılanır.",
+  },
+  early: {
+    name: 'Erken döngü', short: 'Soluk hastadan önce biter',
+    p: { mode: 'PSV', PEEP: 5, PS: 10, rise: 0.1, ETS: 45, trig: 2, C: 30, R: 6, pt: { rr: 20, pmax: 6, ti: 1.0, jitter: 0.05 } },
+    fix: { ETS: 10, PS: 14 }, fixText: 'ETS %45→10, PS 10→14',
+    marks: ['ERKEN DÖNGÜ', 'ÇİFT'],
+    look: ['Tepe ekspiratuvar akımdan hemen sonra küçük çıkıntı ve ani geri dönüş.', 'Ti çok kısa, Vt küçük; mor efor soluk bittikten sonra da sürer.', 'Eforu biraz daha güçlü olan solukta (yaklaşık 3 solukta bir) çift tetiklemeye dönüşür: aynı olayın ağır hâli.'],
+    mech: "Hastanın nöral inspiryumu ventilatörünkinden uzun. Hasta hâlâ çektiği için tepe ekspiratuvar akım kesilir. Kısa zaman sabitli (sert, ARDS benzeri) akciğerde akım hızla ETS eşiğine düşer. Hızlı rampa tepe akımı yükseltir; ETS sabit bir yüzde olduğu için soluk daha da erken biter.",
+    causes: ["Ventilatör: ETS yüksek, PS düşük, çok hızlı rampa; zaman döngülüde kısa Ti", "Hasta: kısa zaman sabiti (ARDS)"],
+    fixNote: "ETS düşünce soluk hastanın eforu kadar sürer. ARDS'de ETS'nin %5 civarı en uygun olabilir; en düşük döngü eşiği solunum hızını azaltıp Vt'yi artırır.",
+  },
+  late: {
+    name: 'Geç döngü', short: 'Soluk hastadan sonra biter',
+    p: { mode: 'PSV', PEEP: 5, PS: 18, rise: 0.3, ETS: 5, trig: 2, C: 50, R: 15, maxTi: 3, etsLag: 0.28, pt: { rr: 16, pmax: 6, ti: 0.7, jitter: 0.05, expPush: 18 } },
+    fix: { ETS: 40, PS: 12, rise: 0.1 }, fixText: 'ETS %5→40, PS 18→12, rampa 0.3→0.1 s',
+    marks: ['GEÇ DÖNGÜ', 'BASINÇ ÇIKINTISI'],
+    look: ["Akım işareti: inspiratuvar akımda hızlı düşüş, ardından yatık uzun kuyruk.", "Gecikme uzayınca hasta ekspiratuvar kaslarını kasar (mor iz negatif); inspiryum sonunda geniş, yuvarlak bir basınç çıkıntısı (T dalgası gibi) görülür; ventilatör çıkıntının iniş kolunda döngüye girer."],
+    mech: "Hastanın inspiryumu bitmiş, hava yolu hâlâ basınçlı. Ekspiratuvar kaslar alveol basıncını yükseltir; bu basınç hava yolu basıncını geçince hasta devreye üfler ve hava yolu basıncı yükselir. Ventilatör nöral ekspiryuma taşınca engelsiz ekspiryum süresi kısalır, sonraki tetik için daha büyük efor gerekir ve dinamik hiperinflasyon artar. PSV'de akım ölçütünün yanında iki ikincil döngü ölçütü vardır: basınç (ayarın birkaç cmH₂O üstü) ve süre (maksimum Ti). VKV'de aktif ekspiryum basınç döngüsüne yol açar (bucking); Vt düşer, alarm çalar.",
+    causes: ["Ventilatör: ETS çok düşük, PS çok yüksek, rampa çok uzun; PKV'de uzun Ti; VKV'de düşük akım, uzun Ti, yüksek Vt", "Hasta: uzun zaman sabiti (KOAH)", "NIV: kaçak inspiryumu uzatır (inspiratory hang-up)"],
+    fixNote: "Yüksek ETS ve düşük PS soluğu hastanın eforuyla birlikte bitirir; ekspiratuvar kas kasılması ve basınç çıkıntısı kaybolur. KOAH'ta ETS'yi tepe akımın %40–70'ine çıkarmak sinkroniyi düzeltir, eforu ve dinamik hiperinflasyonu azaltır. Bir başka yol PKV'ye geçip Ti'yi hastanınkine uydurmaktır.",
+  },
+  reverse: {
+    name: 'Ters tetikleme (PKV)', short: 'Makine soluğu eforu tetikler',
+    p: { mode: 'PCV', PEEP: 5, Pinsp: 15, Ti: 0.9, rate: 16, rise: 0.1, trig: 2, C: 40, R: 10, reverse: { delay: 0.55, pmax: 10, ti: 0.8, ratio: 1 } },
+    fix: { mode: 'PSV', PS: 10, ETS: 25, rate: 0, reverse: null, pt: { rr: 16, pmax: 6, ti: 0.9, jitter: 0.08 } }, fixText: 'Sedasyonu azalt, PCV → PSV 10',
+    marks: ['TERS TETİK', 'ÇİFT'],
+    look: ['Soluk zaman tetiklemeli başlar (gri ▲, öncesinde basınç çentiği yok).', 'Mor efor makine soluğu başladıktan sonra gelir; her solukta sabit gecikmeyle (sürüklenme 1:1).', 'İnspiryum sonunda akım yeniden artar, ekspiratuvar akım kesintiye uğrar; ağırsa çift tetikleme.'],
+    mech: "Pasif insüflasyon refleks diyafram kasılmasını başlatır; derin sedasyondaki, apneik görünen hastada olur ve ARDS'de sıktır. Kasılma bağımlı akciğerde plevral basıncı düşürür ve gazı başka bölgelerden çeker (pendelluft); hayvan modelinde bölgesel aşırı gerilme gösterilmiştir. Kasılma ekspiryuma taşarsa eksantrik diyafram kasılması ve çift tetikleme riski doğar.",
+    causes: ["Derin sedasyon, kontrollü mod; görünürde apneik hasta", "ARDS", "Olası mekanizmalar: refleks sürüklenme, sitokinler, solunum kontrolü instabilitesi"],
+    fixNote: 'Sedasyon azalıp spontan moda geçilince hasta kendi ritmiyle tetikler. Ters tetik ventilatör ayarıyla çoğu zaman düzelmez; en zararlı asenkronilerdendir ve ağır ARDS\'de farmakolojik baskılama gerekebilir.',
+  },
+  reverse_vc: {
+    name: 'Ters tetikleme (VKV)', short: 'Sürüklenme, VKV\'de çift tetik',
+    p: { mode: 'VCV', PEEP: 5, Vt: 0.45, Fset: 50, rate: 16, trig: 2, C: 40, R: 10, reverse: { delay: 0.45, pmax: 10, ti: 0.8, ratio: 1 } },
+    fix: { mode: 'PSV', PS: 10, ETS: 25, rise: 0.1, rate: 0, reverse: null, pt: { rr: 16, pmax: 6, ti: 0.9, jitter: 0.08 } }, fixText: 'Sedasyonu azalt, VKV → PSV 10',
+    marks: ['TERS TETİK', 'ÇİFT'],
+    look: ['Zaman tetiklemeli soluk (gri ▲) başladıktan sonra mor efor gelir.', 'Akım sabit olduğu için efor basınç eğrisinde içe çökme yapar.', 'Efor ekspiryuma taşınca ikinci soluk tetiklenir: hacim yığılır, tepe basınç ve auto-PEEP artar.'],
+    mech: "Ters tetikleme çift tetiklemeye yol açabilir. VKV'de çift tetikleme Vt'yi ikiye katlar; PKV'de artış iki kattan azdır. Sürüklenme oranı Hasta satırından değiştirilebilir (1:1, 1:2, 1:3).",
+    causes: ["Derin sedasyon, kontrollü mod", "ARDS", "Ters tetikleme çift tetiklemenin nedenlerinden biridir"],
+    fixNote: 'Spontan modda hasta kendi ritmiyle tetikler; yığılma kaybolur.',
+  },
+  stack: {
+    name: 'Hava hapsi (breath stacking)', short: 'Ekspiryum bitmeden yeni soluk',
+    p: { mode: 'VCV', PEEP: 5, Vt: 0.5, Fset: 40, rate: 26, trig: 2, C: 60, R: 22 },
+    fix: { rate: 12, Fset: 60 }, fixText: 'f 26→12, akım 40→60 L/dk',
+    marks: [],
+    look: ['Ekspiratuvar akım sıfıra dönmeden yeni soluk başlar.', 'Ekspiratuvar tutma (Eksp. tut) yapın: PEEPtot ayarlanan PEEP\'ten yüksek çıkar, fark auto-PEEP\'tir.', 'Uzun zaman sabiti (τ = R×C) ve kısa ekspiryum süresi hava hapsini artırır.'],
+    mech: "Ekspiryum sonunda alveolde gaz kalırsa (auto-PEEP) hastanın her eforu önce bu basıncı dengelemek zorundadır; bu, gecikmeli tetiklemenin ve etkisiz eforun ana hasta faktörüdür. Ekshalasyon valfinin geç açılması ya da ekspiryuma taşan inflasyon dinamik hiperinflasyonu artırır.",
+    causes: ["Yüksek frekans, uzun Ti, yüksek Vt", "Hasta: uzun zaman sabiti (KOAH, bronkospazm)"],
+    fixNote: 'Daha düşük frekans ve daha yüksek akım ekspiryuma zaman bırakır. Düzeltmeden sonra Eksp. tut ile PEEPtot\'u tekrar ölçün.',
+  },
+};
+
+
+
+const SCEN_EN = {
+  normal_psv: {
+    name: 'Normal – Pressure support', short: 'PSV, synchronous breaths',
+    look: ['Every patient effort (purple trace) triggers a breath; there is a small pressure notch at the trigger.', 'Flow returns to zero at end-expiration (no auto-PEEP).', 'The breath ends when the patient\'s effort ends and flow falls to the ETS threshold.'],
+    mech: "Inspiratory muscle contraction lowers alveolar pressure, gas moves from the airway into the alveoli, airway pressure falls and the ventilator triggers once the threshold is crossed. This chain is the only way the patient can influence the ventilator. Equation of motion: Pmus + Pvent = Flow×R + Volume×E + PEEPi. In PSV, flow follows the patient's demand, so the match between effort and delivered volume is preserved.",
+  },
+  normal_vcv: {
+    name: 'Normal – Volume control (passive)', short: 'Sedated, time-triggered',
+    look: ['Square flow: constant flow throughout inspiration.', 'Pressure rises linearly (a Flow×R step plus a Volume×E ramp).', 'During the 0.3 s inspiratory pause flow is zero and pressure falls from peak to plateau. Ppeak − Pplat reflects resistance, Pplat − PEEP reflects compliance.', 'No patient effort; all breaths are time-triggered (grey ▲).'],
+    mech: "In a passive patient pressure is fully determined by the equation of motion: Paw = Flow×R + Volume×E + PEEP. In VCV flow and volume are fixed; if the patient makes an effort, only pressure changes. Compare the deviations in the asynchrony scenarios with this reference.",
+  },
+  iie: {
+    name: 'Ineffective inspiratory effort', short: 'The most common asynchrony',
+    look: ['During expiration, a sudden decrease or notch in flow, not followed by a breath.', 'The pressure curve barely changes.', 'A new breath starts before expiratory flow reaches zero (auto-PEEP).', 'The rate shown by the ventilator is lower than the patient\'s true effort rate.'],
+    mech: "The effort lowers alveolar pressure; the pressure gradient driving expiration falls and expiratory flow slows. The amount of gas in the airway does not change, so the pressure curve barely changes. The effort cannot overcome auto-PEEP plus the trigger threshold. Two consecutive expirations limit auto-PEEP by themselves. Ineffective efforts relate to the level of support, not to effort size: in A/C or high PS, 1/4–1/3 of efforts may fail to trigger.",
+    causes: ["Ventilator: high support (PS, Vt), short expiratory time from long Ti or high set rate, high trigger threshold", "Patient mechanics: high resistance, low elastance (high compliance), auto-PEEP", "Low respiratory drive, sedation"],
+    fixText: 'PS 18→10, ETS 15→40%, trigger 3→2 L/min',
+    fixNote: "Shorter, smaller breaths leave time for expiration; every effort triggers. The remaining delay comes from this patient's auto-PEEP: external PEEP set below auto-PEEP also lowers the effort needed to trigger (see the Auto-PEEP and external PEEP scenario). With auto-PEEP, making the trigger more sensitive is not enough on its own.",
+  },
+  delay: {
+    name: 'Delayed triggering', short: 'Long gap between effort and support',
+    look: ['The breath starts well after the purple effort begins.', 'Meanwhile expiratory flow is pulled towards zero; pressure does not change immediately.', 'Expiratory flow does not reach zero (auto-PEEP).'],
+    mech: "If the effort starts before FRC is reached, its first part is spent only on offsetting auto-PEEP; the trigger comes after that. Even with a fast trigger, the trigger effort is 12–17% of the total inspiratory effort. Pressure is measured inside the ventilator, not in the patient, so tube resistance further reduces trigger sensitivity. More support lowers drive but lengthens triggering time.",
+    causes: ["Ventilator: high trigger threshold, slow trigger response (pneumatic delay), high support", "Patient: auto-PEEP, low drive, weak effort", "Interface: endotracheal tube resistance"],
+    fixText: 'Trigger 8→2 L/min, ETS 25→40%',
+    fixNote: "A sensitive trigger and earlier cycling (longer expiration, less auto-PEEP) shorten the delay. A flow trigger shortens the trigger phase compared with a pressure trigger, but post-trigger effort is unchanged.",
+  },
+  auto: {
+    name: 'Auto-triggering', short: 'Breaths without effort',
+    look: ['No pressure drop at the start of the breath: the breath arrives without the patient pulling.', 'Small oscillations in flow, synchronous with the heartbeat.', 'Breaths without a purple effort; total rate far above the patient\'s effort rate.'],
+    mech: "The ventilator mistakes a signal other than patient effort (cardiac oscillation, leak, water in the circuit) for an effort and delivers a breath. The breath count of the ventilator exceeds the patient's true respiratory rate. A heartbeat can cause 4–6 L/min flow oscillations; a sensitive flow trigger such as 2 L/min counts it as an effort.",
+    causes: ["Ventilator: trigger too sensitive; leak compensation in NIV", "Interface: leak, water or secretions in the circuit, bronchopleural fistula", "Patient: cardiac oscillations"],
+    fixText: 'Trigger 0.5→3 L/min',
+    fixNote: 'With a less sensitive trigger only real efforts start a breath. Set the trigger to the most sensitive value that does not auto-trigger. In practice also check for leaks and water in the circuit.',
+  },
+  peepi: {
+    name: 'Auto-PEEP and external PEEP', short: 'Triggering with flow limitation',
+    look: ['Expiratory flow does not reach zero; when an effort arrives, flow is first pulled to zero and the breath comes only afterwards, or not at all.', 'Trigger effort* on the right is high: on every breath the patient must first overcome auto-PEEP.', 'Measure PEEPtot with Exp. hold, then again after raising external PEEP. PEEPtot hardly changes and Ppeak does not rise.'],
+    mech: "With expiratory flow limitation, small airways close at a critical pressure during expiration; alveolar pressure cannot fall below this level and auto-PEEP develops. To trigger, the patient must first overcome auto-PEEP and then the trigger threshold: with auto-PEEP 10 and a −1 cmH₂O trigger, an 11 cmH₂O effort is needed. As long as external PEEP stays below the critical pressure it does not impede expiratory flow, but it closes the gap between airway and alveolus: with external PEEP 7, the effort needed drops to 4 cmH₂O. With auto-PEEP a flow trigger is not better than a pressure trigger; making the trigger more sensitive does not solve the problem.",
+    causes: ["Patient: expiratory flow limitation (COPD, asthma), long time constant", "Ventilator: high minute ventilation, high Vt or PS, short expiratory time", "External PEEP low relative to auto-PEEP"],
+    fixText: 'PEEP 3→8 (about 80% of PEEPtot)',
+    fixNote: "With external PEEP at about 80% of PEEPtot every effort triggers and the delay shortens; hyperinflation does not increase. In VCV, if Ppeak rises when PEEP is added, there is no flow limitation or PEEP is too high and causes overdistension: take the PEEP back. Other options: lower minute ventilation, lengthen expiration, bronchodilators. Set Flow limitation in the Patient row to zero and try the same PEEP increase: this time PEEPtot and Ppeak rise too.",
+  },
+  prvc: {
+    name: 'Falling support in PRVC', short: 'The harder the patient pulls, the lower the pressure',
+    look: ['Pressure is high on the first breaths; the patient pulls hard, so VT exceeds the target.', 'The ventilator lowers ΔPinsp each breath (current value next to the knobs); the pressure curve falls almost to PEEP.', 'VT stays on target, but the volume is now delivered almost entirely by the patient\'s muscles (purple trace).'],
+    mech: "Adaptive volume modes (PRVC, volume support) measure the delivered volume and lower the next breath's pressure when the target VT is exceeded. In a patient with strong effort this means the ventilator withdraws support exactly when it is needed: the harder the patient pulls, the less support it gets and the higher the work load. This is a flow asynchrony and is one of the most harmful asynchronies.",
+    causes: ["Ventilator: adaptive volume-targeted mode in a high-drive patient, low target VT", "Patient: high ventilatory demand (acidosis, pain, anxiety, sepsis)"],
+    fixText: 'PRVC → PSV 8 (fixed support)',
+    fixNote: "With fixed-pressure support, flow rises with demand and support is not withdrawn. Raising the target VT is another option; VT can go up to 8 mL/kg if Pplat ≤ 30. Look separately for the cause of the demand (pain, acidosis).",
+  },
+  starve: {
+    name: 'Flow starvation', short: 'VCV, inadequate flow',
+    look: ['A scooped-out pressure curve during inspiration (upward concavity) instead of the straight ramp of passive VCV.', 'With a strong effort pressure can fall below PEEP.', 'Flow is square and constant: it does not change although the patient\'s demand rises.', 'The dashed purple line is the pressure of a passive patient; the shaded area between it and the real curve is the work done by the patient.', 'Ppeak varies breath to breath because each effort is different.'],
+    mech: "When flow is fixed, the slope of the pressure curve reflects the ratio of delivered to desired flow. If pressure falls below PEEP, the ventilator is adding load. Raising flow lowers drive and muscle work, but may raise respiratory rate. In a pressure-targeted breath flow is the dependent variable and rises with demand, so it matches demand better. Flow asynchrony is one of the most harmful asynchronies.",
+    causes: ["Ventilator: flow too low in VCV; rise time too slow in pressure modes", "Patient: high effort and ventilatory demand", "Mode selection"],
+    fixText: 'VCV → PSV 8 cmH₂O',
+    fixNote: 'In a pressure-targeted mode flow rises with demand; the pressure curve flattens. In this patient Vt grows; drive is high. If staying in VCV, raise flow or switch to a decelerating pattern (turn the Flow knob from 30 to 60 and watch the shaded area shrink). With strong effort a pressure mode can push transpulmonary pressure well above the set pressure; watch for that too.',
+  },
+  double: {
+    name: 'Double triggering', short: 'Two breaths back to back',
+    look: ['Two breaths for a single effort; the expiration between them is shorter than half the mean Ti.', 'Volume stacks on the second breath and peak pressure rises (in VCV Vt roughly doubles).', 'At the start of expiration flow reverses quickly and triggers again.'],
+    mech: "The patient's neural inspiratory time is longer than the ventilator's. When the machine cycles, the patient is still pulling; with high demand a second trigger follows. Expiration between the two breaths is very short and volume stacks (breath stacking). It is the severe form of early cycling. Together with reverse triggering and flow asynchrony it is one of the most harmful asynchronies.",
+    causes: ["Ventilator: short Ti in time-cycled modes; high ETS in flow-cycled modes; low PS; short rise time; flow starvation", "Patient: high ventilatory demand and drive, short time constant, reverse triggering"],
+    fixText: 'Flow 60→40 L/min, decelerating pattern, Tplat 0.3 s',
+    fixNote: "All three changes lengthen Ti in VCV (0.4 s → about 1.5 s) so the breath lasts as long as the patient's neural inspiration; one effort, one breath. In PCV lengthen Ti; in PSV lower ETS. If settings do not fix it, drive is suppressed pharmacologically.",
+  },
+  early: {
+    name: 'Early cycling', short: 'Breath ends before the patient',
+    look: ['A small bump right after peak expiratory flow and a sudden reversal.', 'Ti very short, Vt small; the purple effort continues after the breath ends.', 'On breaths with a slightly stronger effort (about 1 in 3) it turns into double triggering: the severe form of the same event.'],
+    mech: "The patient's neural inspiration is longer than the ventilator's. Because the patient is still pulling, peak expiratory flow is cut off. In a stiff lung with a short time constant (ARDS-like), flow falls quickly to the ETS threshold. A fast rise raises peak flow; since ETS is a fixed percentage, the breath ends even earlier.",
+    causes: ["Ventilator: high ETS, low PS, very fast rise; short Ti in time-cycled modes", "Patient: short time constant (ARDS)"],
+    fixText: 'ETS 45→10%, PS 10→14',
+    fixNote: "With a lower ETS the breath lasts as long as the patient's effort. In ARDS an ETS around 5% may be optimal; the lowest cycling threshold lowers respiratory rate and raises Vt.",
+  },
+  late: {
+    name: 'Delayed cycling', short: 'Breath ends after the patient',
+    look: ["Flow sign: a rapid fall in inspiratory flow, followed by a long, slanted tail.", "As the delay grows the patient contracts the expiratory muscles (purple trace goes negative); a wide, rounded pressure bump (like a T wave) appears at end-inspiration and the ventilator cycles on the downslope of the bump."],
+    mech: "The patient's inspiration has ended but the airway is still pressurized. Expiratory muscles raise alveolar pressure; once it exceeds airway pressure the patient blows into the circuit and airway pressure rises. When the ventilator spills over into neural expiration, unimpeded expiratory time shortens, the next trigger needs a bigger effort and dynamic hyperinflation increases. Besides the flow criterion, PSV has two secondary cycling criteria: pressure (a few cmH₂O above the setting) and time (maximum Ti). In VCV active expiration causes pressure cycling (bucking); Vt falls and alarms sound.",
+    causes: ["Ventilator: ETS too low, PS too high, rise too slow; long Ti in PCV; low flow, long Ti, high Vt in VCV", "Patient: long time constant (COPD)", "NIV: leak prolongs inspiration (inspiratory hang-up)"],
+    fixText: 'ETS 5→40%, PS 18→12, rise 0.3→0.1 s',
+    fixNote: "A higher ETS and lower PS end the breath together with the patient's effort; expiratory muscle contraction and the pressure bump disappear. In COPD raising ETS to 40–70% of peak flow improves synchrony and reduces effort and dynamic hyperinflation. Another option is switching to PCV and matching Ti to the patient's.",
+  },
+  reverse: {
+    name: 'Reverse triggering (PCV)', short: 'Machine breath triggers effort',
+    look: ['The breath starts time-triggered (grey ▲, no pressure notch before it).', 'The purple effort comes after the machine breath starts, with a fixed delay each breath (1:1 entrainment).', 'At end-inspiration flow rises again and expiratory flow is interrupted; if severe, double triggering.'],
+    mech: "Passive insufflation starts a reflex diaphragm contraction; it occurs in deeply sedated, apparently apneic patients and is common in ARDS. The contraction lowers pleural pressure in the dependent lung and pulls gas from other regions (pendelluft); regional overdistension has been shown in animal models. If the contraction extends into expiration there is a risk of eccentric diaphragm contraction and double triggering.",
+    causes: ["Deep sedation, controlled mode; apparently apneic patient", "ARDS", "Possible mechanisms: reflex entrainment, cytokines, unstable respiratory control"],
+    fixText: 'Lighten sedation, PCV → PSV 10',
+    fixNote: 'When sedation is lightened and a spontaneous mode is used, the patient triggers with their own rhythm. Reverse triggering often does not respond to ventilator adjustments; it is one of the most harmful asynchronies and severe ARDS may need pharmacologic suppression.',
+  },
+  reverse_vc: {
+    name: 'Reverse triggering (VCV)', short: 'Entrainment, double trigger in VCV',
+    look: ['A purple effort follows the time-triggered breath (grey ▲).', 'Because flow is fixed, the effort scoops the pressure curve.', 'When the effort spills into expiration a second breath triggers: volume stacks, peak pressure and auto-PEEP rise.'],
+    mech: "Reverse triggering can cause double triggering. In VCV double triggering doubles Vt; in PCV the increase is less than double. The entrainment ratio can be changed in the Patient row (1:1, 1:2, 1:3).",
+    causes: ["Deep sedation, controlled mode", "ARDS", "Reverse triggering is one cause of double triggering"],
+    fixText: 'Lighten sedation, VCV → PSV 10',
+    fixNote: 'In a spontaneous mode the patient triggers with their own rhythm; stacking disappears.',
+  },
+  stack: {
+    name: 'Air trapping (breath stacking)', short: 'New breath before expiration ends',
+    look: ['A new breath starts before expiratory flow returns to zero.', 'Do an expiratory hold (Exp. hold): PEEPtot is higher than set PEEP; the difference is auto-PEEP.', 'A long time constant (τ = R×C) and short expiratory time increase air trapping.'],
+    mech: "If gas remains in the alveoli at end-expiration (auto-PEEP), every patient effort must first offset this pressure; it is the main patient factor in delayed triggering and ineffective efforts. Late opening of the exhalation valve or inflation spilling into expiration increases dynamic hyperinflation.",
+    causes: ["High rate, long Ti, high Vt", "Patient: long time constant (COPD, bronchospasm)"],
+    fixText: 'f 26→12, flow 40→60 L/min',
+    fixNote: 'A lower rate and higher flow leave time for expiration. Re-measure PEEPtot with Exp. hold after the change.',
+  },
+};
+
+// ---- Dil (Türkçe / İngilizce) ----
+const EN = {
+  // satırlar, düğmeler
+  'MV Asenkroni Simülatörü': 'MV Asynchrony Simulator',
+  'Canlı akan ventilatör ekranı · ayarlanabilir ventilatör ve hasta': 'Live sweeping ventilator screen · adjustable ventilator and patient',
+  'Senaryo': 'Scenario', 'Hasta': 'Patient', 'Görünüm': 'View',
+  'Pmus izi': 'Pmus trace', 'Olay işaretleri': 'Event marks', 'Dalga boyu': 'Wave height', 'Zaman penceresi': 'Time window',
+  'Ayar adı': 'Preset name', 'Ayarı kaydet': 'Save preset', 'Sıfırla': 'Reset', 'Ayarı düzelt': 'Fix settings',
+  'Ventilasyon modunu değiştir': 'Change ventilation mode', 'Chatburn mod sınıflaması': 'Chatburn mode classification',
+  'Üstten bir senaryo seçin; dalga formları akmaya başlasın.': 'Pick a scenario above and the waveforms start sweeping.',
+  'MV-SİM 300': 'MV-SIM 300', 'DONDURULDU': 'FROZEN', 'BEKLEMEDE': 'STANDBY',
+  'Ptepe': 'Ppeak', 'Pplato': 'Pplat', 'ΔP sürüş': 'Driving ΔP', 'Hasta eforu*': 'Patient efforts*', 'Tetik eforu*': 'Trigger effort*',
+  'Tetik için gereken kas basıncı: PEEPi + tetik eşiği': 'Muscle pressure needed to trigger: PEEPi + trigger threshold',
+  'Ventilasyon modu…': 'Ventilation mode…', 'Ventilasyon modu': 'Ventilation mode', 'Dalgaları dondur': 'Freeze waves', 'Devam et': 'Resume',
+  'İnspiratuvar tutma': 'Inspiratory hold', 'Ekspiratuvar tutma': 'Expiratory hold', 'Gündüz / Gece': 'Day / Night',
+  'Tam ekran': 'Full screen', 'Tam ekrandan çık': 'Exit full screen', 'Kapat': 'Close', 'Sil': 'Delete',
+  'Düğmeyi seçin, sonra döner düğmeyle, fare tekerleğiyle, sürükleyerek ya da ok tuşlarıyla ayarlayın': 'Select a knob, then adjust it with the rotary dial, mouse wheel, dragging or arrow keys',
+  'Seçili ayarı çevirerek değiştirin': 'Turn to change the selected setting', 'Azalt': 'Decrease', 'Artır': 'Increase',
+  'Ayar seçilmedi': 'No setting selected', 'Tutma manevrası': 'Hold maneuver', 'Özel ayar': 'Custom settings', 'Kayıtlı': 'Saved', 'Ayar': 'Preset',
+  // gruplar
+  'Normal': 'Normal', 'Tetikleme': 'Triggering', 'Gaz verme': 'Gas delivery', 'Sonlanma (döngü)': 'Cycling', 'Diğer': 'Other',
+  // modlar
+  'Volüm kontrol (A/C)': 'Volume control (A/C)', 'Basınç kontrol (A/C)': 'Pressure control (A/C)',
+  'Basınç ayarlı volüm kontrol': 'Pressure-regulated volume control', 'Basınç destek': 'Pressure support',
+  // kanallar ve birimler
+  'Akım': 'Flow', 'Hacim': 'Volume', 'L/dk': 'L/min', '/dk': '/min',
+  // düğmeler
+  'Akım paterni': 'Flow pattern', 'Sabit': 'Square', 'Azalan': 'Decelerating', 'Eksp. tetik': 'Exp. trigger', '% tepe akım': '% peak flow',
+  'Rampa': 'Rise', 'Tetik tipi': 'Trigger type', 'Basınç': 'Pressure', 'Tetik': 'Trigger',
+  // hasta satırı
+  'Hazır hasta': 'Preset patient', 'KOAH alevlenme': 'COPD exacerbation', 'ARDS': 'ARDS',
+  'Normal akciğer: C 50, R 10': 'Normal lung: C 50, R 10',
+  'Yüksek direnç (ekspiryumda daha da yüksek), normal-yüksek kompliyans, uzun τ, ekspiratuvar akım kısıtlılığı: hava hapsine yatkın': 'High resistance (even higher in expiration), normal-high compliance, long τ, expiratory flow limitation: prone to air trapping',
+  'Düşük kompliyans (sert akciğer), kısa τ': 'Low compliance (stiff lung), short τ',
+  'Kompliyans': 'Compliance', 'Direnç': 'Resistance', 'Akım kısıtlılığı': 'Flow limitation', 'yok': 'none',
+  'Efor sıklığı': 'Effort rate', 'Efor gücü': 'Effort strength', 'Nöral Ti': 'Neural Ti', 'Eksp. kas': 'Exp. muscles',
+  'Sürüklenme': 'Entrainment', 'Kapalı': 'Off', 'Efor gecikmesi': 'Effort delay', 'Sürüklenme gücü': 'Entrainment strength',
+  'Kardiyak osilasyon': 'Cardiac oscillation', 'Kalp hızı': 'Heart rate',
+  // olaylar
+  'ETKİSİZ EFOR': 'INEFFECTIVE EFFORT', 'GECİKME': 'TRIGGER DELAY', 'OTO': 'AUTO-TRIGGER', 'ÇİFT': 'DOUBLE TRIGGER',
+  'ERKEN DÖNGÜ': 'EARLY CYCLING', 'GEÇ DÖNGÜ': 'DELAYED CYCLING', 'BASINÇ ÇIKINTISI': 'PRESSURE SPIKE', 'AKIM AÇLIĞI': 'FLOW STARVATION',
+  'TERS TETİK': 'REVERSE TRIGGER', 'DESTEK ↓': 'SUPPORT ↓',
+};
+// uzun statik bloklar
+const HTML_EN = {
+  howto: `<p class="title">How to use</p>
+      <p>Pick a scenario in the top row; the screen sweeps left to right like a real ventilator. Ventilator settings are the round knobs at the bottom of the screen: click a knob (yellow ring), then turn the rotary dial on the right, or use the mouse wheel, dragging or the arrow keys. Change the mode from the orange box or the <b>Ventilation mode…</b> key. Patient mechanics and effort are in the <b>Patient</b> row above. The purple trace is the patient's muscle effort (Pmus); a real ventilator does not show it, it is shown for teaching.</p>
+      <div class="legend"><span><i style="background:var(--paw)"></i>Pressure (Paw)</span><span><i style="background:var(--flow)"></i>Flow</span><span><i style="background:var(--vol)"></i>Volume</span><span><i style="background:var(--pmus)"></i>Patient effort (Pmus)</span><span>▲ purple: patient-triggered · ▲ grey: time-triggered</span><span>Dashed purple line (VCV): pressure of a passive patient; the shaded gap is the patient's work</span><span>Space: freeze · F: full screen</span></div>`,
+  foot: `<p style="margin:0 0 6px">For education only, not for clinical decisions. The screen layout is inspired by ICU ventilators; it is not any manufacturer's product. Model: single-compartment equation of motion (Paw = Flow×R + Volume×E + PEEP − Pmus) plus patient muscle pressure; gas exchange is not modelled (FiO₂ is display only). Values marked * come from the model; a real ventilator does not measure them directly.</p>
+    <p style="margin:0 0 2px"><b>References</b></p>
+    <ol style="margin:0;padding-left:18px">
+      <li>Murias G, Lucangelo U, Blanch L. Patient-ventilator asynchrony. <i>Curr Opin Crit Care</i> 2016;22:53–59.</li>
+      <li>Hamilton Medical. Patient-ventilator asynchrony reference card (ELO2019041N.04), 2023.</li>
+      <li>Tonetti T, Merola R, Gregoretti C, Ranieri VM. Patient–ventilator interaction. <i>Textbook of Critical Care</i>, Chapter 54, pp. 393–399.</li>
+      <li>Hess DR, Kacmarek RM. Patient-ventilator interaction. <i>Essentials of Mechanical Ventilation</i>, Chapter 15, pp. 153–166.</li>
+    </ol>`,
+};
+const TIPS_EN = `<div class="card"><h3>Setting tips</h3><ul>
+<li>The most harmful asynchronies: double triggering, reverse triggering and flow asynchrony.</li>
+<li>Trigger: the most sensitive value that does not auto-trigger. Flow and pressure triggers differ little.</li>
+<li>Rate below the patient's own rate. VT up to 8 mL/kg if Pplat ≤ 30.</li>
+<li>Minimize auto-PEEP; with flow limitation, add external PEEP.</li>
+<li>A high inspiratory flow shortens neural Ti and raises the rate.</li>
+<li>Rise: fast with high drive, slow with low drive.</li>
+<li>Synchrony is not comfort: dyspnea is common and only part of it improves with settings. Look for pain; sedatives often do not reduce asynchrony.</li>
+<li>PSV without a backup rate can cause periodic breathing and sleep fragmentation.</li>
+</ul></div>`;
+let LANG = (() => { try { const v = localStorage.getItem('mvsim.lang'); if (v) return JSON.parse(v); } catch (e) {} return /^tr/i.test(navigator.language || '') ? 'tr' : 'en'; })();
+const T = s => (LANG === 'en' && EN[s] != null ? EN[s] : s);
+const L = (tr, en) => (LANG === 'en' ? en : tr);
+const sx = (k, f) => (LANG === 'en' && SCEN_EN[k] && SCEN_EN[k][f] != null ? SCEN_EN[k][f] : SCEN[k][f]);
+// tablo nesnelerindeki Türkçe etiketleri saklayıp seçili dile çevir
+function localizeObj(o, fields) {
+  o._tr = o._tr || {};
+  for (const f of fields) if (o[f] != null) { if (!(f in o._tr)) o._tr[f] = JSON.parse(JSON.stringify(o[f])); }
+  for (const f in o._tr) {
+    const v = o._tr[f];
+    o[f] = Array.isArray(v) ? v.map(x => Array.isArray(x) ? x.map(y => typeof y === 'string' ? T(y) : y) : T(x)) : T(v);
+  }
+}
+const STATIC_TR = {};
+function applyStatic() {
+  document.documentElement.lang = LANG;
+  document.title = T('MV Asenkroni Simülatörü');
+  document.querySelectorAll('[data-i]').forEach(el => {
+    const k = el.dataset.i;
+    if (!(k in STATIC_TR)) STATIC_TR[k] = el.innerHTML;
+    el.innerHTML = LANG === 'en' ? (HTML_EN[k] || EN[STATIC_TR[k]] || STATIC_TR[k]) : STATIC_TR[k];
+  });
+  for (const [attr, sel] of [['title', '[data-it]'], ['placeholder', '[data-ip]'], ['aria-label', '[data-ia]']]) {
+    document.querySelectorAll(sel).forEach(el => {
+      const key = 'a:' + attr;
+      el._tr = el._tr || {};
+      if (!(key in el._tr)) el._tr[key] = el.getAttribute(attr);
+      el.setAttribute(attr, T(el._tr[key]));
+    });
+  }
+  document.querySelectorAll('#lang button').forEach(b => b.classList.toggle('on', b.dataset.l === LANG));
+}
+function localizeTables() {
+  CH.forEach(c => localizeObj(c, ['name', 'unit']));
+  Object.values(K).forEach(c => localizeObj(c, ['label', 'unit', 'opts']));
+  PAT.forEach(c => localizeObj(c, ['label', 'unit', 'seg']));
+  PRESETS.forEach(p => localizeObj(p, ['0', '2']));
+  Object.values(MODES).forEach(m => localizeObj(m, ['sub']));
+}
+
+// ---- Parametreler ----
+const DEF = {
+  mode: 'VCV', PEEP: 5, Vt: 0.45, Fset: 50, pattern: 'square', pause: 0, rate: 14,
+  Pinsp: 15, Ti: 1.0, PS: 10, ETS: 25, rise: 0.15,
+  trigType: 'flow', trig: 2, trigP: 1, FiO2: 40,
+  C: 50, R: 10, Rexp: 1, Pcrit: 0, cardiac: 0, hr: 100,
+  pt: { rr: 0, pmax: 6, ti: 0.9, jitter: 0.08, expPush: 0 },
+  reverse: { ratio: 0, delay: 0.55, pmax: 8, ti: 0.8 },
+};
+const clone = o => JSON.parse(JSON.stringify(o));
+function normalize(p) {
+  const q = Object.assign(clone(DEF), clone(p));
+  q.pt = Object.assign(clone(DEF.pt), p.pt || {});
+  q.reverse = Object.assign(clone(DEF.reverse), p.reverse || {});
+  if (!p.reverse) q.reverse.ratio = 0;
+  if (p.rate == null) q.rate = 14;
+  if (q.mode === 'PSV') q.rate = 0;
+  return q;
+}
+
+// ---- Uygulama durumu ----
+let sim = null, P = normalize({ mode: 'VCV', pause: 0.3 }), base = clone(P);
+let curKey = null, curName = '', fixed = false, running = false, speed = 1;
+let WIN = 12, selKnob = null;
+const DT = 0.002;
+const CH = [
+  { k: 'paw', name: 'Paw', unit: 'cmH₂O', min: -5, max: 40, ticks: [0, 10, 20, 30], color: '--paw' },
+  { k: 'flow', name: 'Akım', unit: 'L/dk', min: -120, max: 120, ticks: [-60, 0, 60], color: '--flow' },
+  { k: 'vol', name: 'Hacim', unit: 'mL', min: -50, max: 1100, ticks: [0, 500, 1000], color: '--vol' },
+  { k: 'pmus', name: 'Pmus', unit: 'cmH₂O', min: -20, max: 16, ticks: [-10, 0, 10], color: '--pmus' },
+];
+
+const $ = id => document.getElementById(id);
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('mvsim.' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem('mvsim.' + k, JSON.stringify(v)); } catch (e) {} },
+};
+const cv = $('cv'), ctx = cv.getContext('2d');
+let W = 0, H = 0, dpr = 1, cols = null, lastCol = -1, ppCol = null;
+let COL = {};
+function readColors() {
+  const cs = getComputedStyle(document.documentElement);
+  for (const k of ['--paw', '--flow', '--vol', '--pmus', '--screen', '--grid', '--zero', '--tick', '--accent', '--timeTri', '--warn']) COL[k] = cs.getPropertyValue(k).trim();
+}
+
+const isV = p => p.mode === 'VCV', isPC = p => p.mode === 'PCV', isPR = p => p.mode === 'PRVC', isPS = p => p.mode === 'PSV';
+const get = (o, path) => path.split('.').reduce((a, k) => a[k], o);
+function set(o, path, v) { const ks = path.split('.'); const last = ks.pop(); ks.reduce((a, k) => a[k], o)[last] = v; }
+const MODES = {
+  VCV: { name: 'VC-CMV', sub: 'Volüm kontrol (A/C)', chat: 'VC-CMVs' },
+  PCV: { name: 'PC-CMV', sub: 'Basınç kontrol (A/C)', chat: 'PC-CMVs' },
+  PRVC: { name: 'PRVC', sub: 'Basınç ayarlı volüm kontrol', chat: 'PC-CMVa' },
+  PSV: { name: 'SPN-CPAP/PS', sub: 'Basınç destek', chat: 'PC-CSVs' },
+};
+
+// ---- Senaryo satırı ----
+function buildScen() {
+  const row = $('scenRow'); row.innerHTML = '';
+  for (const [g, keys] of GROUPS) {
+    const l = document.createElement('span'); l.className = 'glab'; l.textContent = T(g); row.appendChild(l);
+    for (const k of keys) {
+      const b = document.createElement('button');
+      b.className = 'chip'; b.dataset.k = k; b.title = sx(k, 'short');
+      b.textContent = sx(k, 'name');
+      b.onclick = () => select(k);
+      row.appendChild(b);
+    }
+  }
+  const presets = store.get('presets', []);
+  if (presets.length) {
+    const l = document.createElement('span'); l.className = 'glab'; l.textContent = T('Kayıtlı'); row.appendChild(l);
+    presets.forEach((pr, i) => {
+      const b = document.createElement('button');
+      b.className = 'chip'; b.dataset.k = 'preset' + i; b.title = MODES[pr.p.mode].name;
+      b.innerHTML = pr.name + '<span class="x" title="' + T('Sil') + '">✕</span>';
+      b.onclick = e => {
+        if (e.target.classList.contains('x')) { const l = store.get('presets', []); l.splice(i, 1); store.set('presets', l); buildScen(); markScen(); return; }
+        startCustom(pr.p, pr.name, 'preset' + i);
+      };
+      row.appendChild(b);
+    });
+  }
+}
+function markScen() { document.querySelectorAll('#scenRow .chip').forEach(b => b.classList.toggle('on', b.dataset.k === curKey)); }
+
+function scenParams() {
+  const s = SCEN[curKey];
+  return normalize(Object.assign({}, s.p, fixed && s.fix ? s.fix : {}));
+}
+
+function restart() {
+  sim = makeSim(P); sim.p = P;
+  resetCols(); lastNumT = 0; lastBannerT = { i: -1, e: -1 };
+  running = true;
+  $('overlay').style.display = 'none'; $('frozen').classList.remove('on'); $('banner').classList.remove('on');
+  ['bPause', 'bIHold', 'bEHold'].forEach(id => $(id).disabled = false);
+  $('bPause').textContent = T('Dalgaları dondur'); $('bPause').classList.remove('on');
+  clearNums();
+}
+
+function refreshAll() { markScen(); buildKnobs(); syncControls(); renderHdr(); renderInfo(); updFixBtn(); }
+function select(k) {
+  curKey = k; curName = SCEN[k].name; fixed = false;
+  P = scenParams(); base = clone(P);
+  restart(); refreshAll();
+}
+function startCustom(p, name, key) {
+  curKey = key || 'custom'; curName = name || 'Özel ayar'; fixed = false;
+  P = normalize(p); base = clone(P);
+  restart(); refreshAll();
+}
+
+function toggleFix() {
+  if (!sim || !SCEN[curKey] || !SCEN[curKey].fix) return;
+  fixed = !fixed;
+  const np = scenParams();
+  for (const k in P) delete P[k];
+  Object.assign(P, np);
+  if (P.pt.rr && !sim.efforts.length) sim.nextEffort = sim.t + 0.3;
+  buildKnobs(); syncControls(); renderHdr(); updFixBtn();
+}
+
+function updFixBtn() {
+  const b = $('bFix'), s = SCEN[curKey];
+  if (!s || !s.fix) { b.disabled = true; b.textContent = T('Ayarı düzelt'); b.classList.remove('undo'); return; }
+  b.disabled = false;
+  b.textContent = fixed ? L('↺ Asenkroniyi geri getir', '↺ Bring the asynchrony back') : T('Ayarı düzelt') + ': ' + sx(curKey, 'fixText');
+  b.classList.toggle('undo', fixed);
+}
+
+// ---- Ventilatör ayar düğmeleri (moda göre) ----
+const K = {
+  O2: { key: 'FiO2', label: 'O₂', unit: '%', min: 21, max: 100, step: 1 },
+  VT: { key: 'Vt', label: 'VT', unit: 'mL', min: 200, max: 900, step: 10, scale: 1000 },
+  FLOW: { key: 'Fset', label: 'Akım', unit: 'L/dk', min: 15, max: 120, step: 5 },
+  PAT: { key: 'pattern', label: 'Akım paterni', opts: [['square', 'Sabit'], ['decel', 'Azalan']] },
+  TPL: { key: 'pause', label: 'Tplato', unit: 's', min: 0, max: 1, step: 0.05 },
+  RR: { key: 'rate', label: 'RR', unit: '/dk', min: 4, max: 40, step: 1 },
+  PEEP: { key: 'PEEP', label: 'PEEP', unit: 'cmH₂O', min: 0, max: 20, step: 1 },
+  PINSP: { key: 'Pinsp', label: 'ΔPinsp', unit: 'cmH₂O', min: 5, max: 35, step: 1 },
+  TI: { key: 'Ti', label: 'Ti', unit: 's', min: 0.3, max: 2.5, step: 0.05 },
+  PS: { key: 'PS', label: 'ΔPsupp', unit: 'cmH₂O', min: 0, max: 30, step: 1 },
+  ETS: { key: 'ETS', label: 'Eksp. tetik', unit: '% tepe akım', min: 5, max: 80, step: 5 },
+  RISE: { key: 'rise', label: 'Rampa', unit: 's', min: 0.05, max: 0.4, step: 0.05 },
+  TTYPE: { key: 'trigType', label: 'Tetik tipi', opts: [['flow', 'Akım'], ['pressure', 'Basınç']] },
+  TRIGF: { key: 'trig', label: 'Tetik', unit: 'L/dk', min: 0.5, max: 10, step: 0.5 },
+  TRIGP: { key: 'trigP', label: 'Tetik', unit: '−cmH₂O', min: 0.5, max: 5, step: 0.5 },
+};
+function knobList(p) {
+  const trig = p.trigType === 'pressure' ? K.TRIGP : K.TRIGF;
+  if (isV(p)) return [K.O2, K.VT, K.FLOW, K.PAT, K.TPL, K.RR, K.PEEP, K.TTYPE, trig];
+  if (isPC(p)) return [K.O2, K.PINSP, K.TI, K.RISE, K.RR, K.PEEP, K.TTYPE, trig];
+  if (isPR(p)) return [K.O2, K.VT, K.TI, K.RISE, K.RR, K.PEEP, K.TTYPE, trig];
+  return [K.O2, K.PS, K.RISE, K.ETS, K.PEEP, K.TTYPE, trig];
+}
+let knobSig = '';
+function buildKnobs() {
+  const list = knobList(P), sig = P.mode + P.trigType;
+  if (sig === knobSig && $('knobs').children.length) return;
+  knobSig = sig;
+  if (selKnob && !list.includes(selKnob)) selKnob = null;
+  const box = $('knobs'); box.innerHTML = '';
+  for (const c of list) {
+    const d = document.createElement('div'); d.className = 'kn';
+    d.innerHTML = `<button class="k" aria-label="${c.label}"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" class="ring" fill="none" stroke-width="4"/><circle cx="32" cy="32" r="25" fill="var(--knob)"/><path class="arc" fill="none" stroke="var(--knobArc)" stroke-width="3" stroke-linecap="round"/></svg><span class="kv"></span></button><div class="kl">${c.label}</div><div class="ku">${c.unit || ''}</div>`;
+    c.el = d;
+    const k = d.querySelector('.k');
+    k.onclick = () => { if (!k._dragged) selectKnob(selKnob === c ? null : c); k._dragged = false; };
+    k.addEventListener('wheel', e => { e.preventDefault(); selectKnob(c); stepKnob(c, e.deltaY < 0 ? 1 : -1); }, { passive: false });
+    let y0 = null, acc = 0;
+    k.addEventListener('pointerdown', e => { y0 = e.clientY; acc = 0; k._dragged = false; k.setPointerCapture(e.pointerId); });
+    k.addEventListener('pointermove', e => {
+      if (y0 == null) return;
+      acc += y0 - e.clientY; y0 = e.clientY;
+      while (Math.abs(acc) >= 10) { const d = Math.sign(acc); acc -= d * 10; k._dragged = true; selectKnob(c); stepKnob(c, d); }
+    });
+    k.addEventListener('pointerup', () => { y0 = null; });
+    box.appendChild(d);
+  }
+  const extra = document.createElement('div'); extra.className = 'hintI'; extra.id = 'kHint'; extra.style.alignSelf = 'center'; extra.style.maxWidth = '220px'; extra.style.color = 'var(--scrMuted)';
+  box.appendChild(extra);
+}
+function selectKnob(c) {
+  selKnob = c;
+  for (const x of knobList(P)) if (x.el) x.el.classList.toggle('sel', x === c);
+  syncControls();
+}
+function knobVal(c) { const v = get(P, c.key); return c.scale ? Math.round(v * c.scale) : v; }
+function fmtKnob(c, v) {
+  if (c.opts) return c.opts.find(o => String(o[0]) === String(v))[1];
+  const dec = (String(c.step).split('.')[1] || '').length;
+  return (+v).toFixed(dec);
+}
+function stepKnob(c, dir) {
+  if (!c) return;
+  if (c.opts) {
+    const i = c.opts.findIndex(o => String(o[0]) === String(get(P, c.key)));
+    const j = Math.max(0, Math.min(c.opts.length - 1, i + dir));
+    return change(c, c.opts[j][0]);
+  }
+  const dec = (String(c.step).split('.')[1] || '').length;
+  let v = knobVal(c) + dir * c.step;
+  v = Math.max(c.min, Math.min(c.max, +v.toFixed(dec)));
+  change(c, v);
+}
+function arcPath(f) {
+  const a0 = -225 * Math.PI / 180, a1 = a0 + Math.max(0.001, f) * 1.5 * Math.PI, r = 30;
+  const p = a => [32 + r * Math.cos(a), 32 + r * Math.sin(a)];
+  const [x0, y0] = p(a0), [x1, y1] = p(a1);
+  return `M${x0.toFixed(2)} ${y0.toFixed(2)} A${r} ${r} 0 ${a1 - a0 > Math.PI ? 1 : 0} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`;
+}
+
+// ---- Hasta satırı ----
+const PRESETS = [
+  ['Normal', { C: 50, R: 10, Rexp: 1, Pcrit: 0 }, 'Normal akciğer: C 50, R 10'],
+  ['KOAH alevlenme', { C: 60, R: 25, Rexp: 1.4, Pcrit: 8 }, 'Yüksek direnç (ekspiryumda daha da yüksek), normal-yüksek kompliyans, uzun τ, ekspiratuvar akım kısıtlılığı: hava hapsine yatkın'],
+  ['ARDS', { C: 25, R: 10, Rexp: 1, Pcrit: 0 }, 'Düşük kompliyans (sert akciğer), kısa τ'],
+];
+const PAT = [
+  { preset: 1, label: 'Hazır hasta' },
+  { key: 'C', label: 'Kompliyans', min: 10, max: 120, step: 1, unit: 'mL/cmH₂O' },
+  { key: 'R', label: 'Direnç', min: 2, max: 40, step: 1, unit: 'cmH₂O/L/s' },
+  { key: 'Pcrit', label: 'Akım kısıtlılığı', min: 0, max: 15, step: 1, unit: 'cmH₂O', fmt: v => v ? L('Pkrit ', 'Pcrit ') + v + ' cmH₂O' : T('yok') },
+  { hint: p => `τ = ${(p.C * p.R / 1000).toFixed(2)} s` + (p.Rexp > 1 ? L(` · eksp. direnç ×${p.Rexp}`, ` · exp. resistance ×${p.Rexp}`) : '') + (p.Pcrit > p.PEEP ? L(` · dış PEEP Pkrit'in ${p.Pcrit - p.PEEP} altında`, ` · external PEEP ${p.Pcrit - p.PEEP} below Pcrit`) : '') },
+  { sep: 1 },
+  { key: 'pt.rr', label: 'Efor sıklığı', min: 0, max: 40, step: 1, unit: '/dk', fmt: v => v ? v + ' ' + T('/dk') : T('yok') },
+  { key: 'pt.pmax', label: 'Efor gücü', min: 0, max: 20, step: 0.5, unit: 'cmH₂O', show: p => p.pt.rr > 0 },
+  { key: 'pt.ti', label: 'Nöral Ti', min: 0.4, max: 2, step: 0.05, unit: 's', show: p => p.pt.rr > 0 },
+  { key: 'pt.expPush', label: 'Eksp. kas', min: 0, max: 20, step: 1, unit: 'cmH₂O', show: p => p.pt.rr > 0 },
+  { sep: 1 },
+  { key: 'reverse.ratio', label: 'Sürüklenme', seg: [[0, 'Kapalı'], [1, '1:1'], [2, '1:2'], [3, '1:3']] },
+  { key: 'reverse.delay', label: 'Efor gecikmesi', min: 0.2, max: 1.2, step: 0.05, unit: 's', show: p => p.reverse.ratio > 0 },
+  { key: 'reverse.pmax', label: 'Sürüklenme gücü', min: 0, max: 15, step: 0.5, unit: 'cmH₂O', show: p => p.reverse.ratio > 0 },
+  { sep: 1 },
+  { key: 'cardiac', label: 'Kardiyak osilasyon', min: 0, max: 5, step: 0.25, unit: 'L/dk', scale: 60 },
+  { key: 'hr', label: 'Kalp hızı', min: 40, max: 160, step: 5, unit: '/dk', show: p => p.cardiac > 0 },
+];
+function buildPat() {
+  const row = $('patRow'); row.innerHTML = '';
+  for (const c of PAT) {
+    let d;
+    if (c.sep) { d = document.createElement('span'); d.className = 'sep'; }
+    else if (c.preset) {
+      d = document.createElement('div'); d.className = 'mini';
+      d.innerHTML = `<div class="lab"><span>${c.label}</span></div><div class="seg">${PRESETS.map((o, i) => `<button data-i="${i}" title="${o[2]}">${o[0]}</button>`).join('')}</div>`;
+      d.querySelectorAll('button').forEach(b => b.onclick = () => applyPreset(PRESETS[+b.dataset.i][1]));
+    }
+    else if (c.hint) { d = document.createElement('span'); d.className = 'hintI'; }
+    else if (c.seg) {
+      d = document.createElement('div'); d.className = 'mini';
+      d.innerHTML = `<div class="lab"><span>${c.label}</span></div><div class="seg">${c.seg.map(o => `<button data-v="${o[0]}">${o[1]}</button>`).join('')}</div>`;
+      d.querySelectorAll('button').forEach(b => b.onclick = () => change(c, +b.dataset.v));
+    } else {
+      d = document.createElement('div'); d.className = 'mini';
+      d.innerHTML = `<div class="lab"><span>${c.label}</span><b></b></div><input type="range" min="${c.min}" max="${c.max}" step="${c.step}">`;
+      const inp = d.querySelector('input');
+      inp.addEventListener('input', () => change(c, +inp.value));
+    }
+    c.el = d; row.appendChild(d);
+  }
+}
+
+function applyPreset(m) {
+  Object.assign(P, m);
+  if (!sim) { startCustom(P, 'Özel ayar'); return; }
+  syncControls(); renderHdr();
+}
+
+function change(c, v) {
+  if (c.scale) v = v / c.scale;
+  set(P, c.key, v);
+  if (c.key === 'mode') {
+    if (v === 'PSV') P.rate = 0;
+    else if (!P.rate) P.rate = 14;
+  }
+  if (c.key === 'pt.rr' && v > 0 && sim && sim.nextEffort > sim.t + 60 / v) sim.nextEffort = sim.t + 0.3;
+  if (!sim) { startCustom(P, 'Özel ayar'); return; }
+  buildKnobs(); syncControls(); renderHdr();
+}
+
+function syncControls() {
+  for (const c of PAT) {
+    if (!c.el) continue;
+    const vis = !c.show || c.show(P);
+    c.el.style.display = vis ? '' : 'none';
+    if (!vis) continue;
+    if (c.hint) { c.el.textContent = c.hint(P); continue; }
+    if (c.preset) { c.el.querySelectorAll('button').forEach(b => { const m = PRESETS[+b.dataset.i][1]; b.classList.toggle('on', m.C === P.C && m.R === P.R && m.Rexp === P.Rexp && m.Pcrit === (P.Pcrit || 0)); }); continue; }
+    if (!c.key) continue;
+    const v = get(P, c.key);
+    const shown = c.scale ? Math.round(v * c.scale * 100) / 100 : v;
+    const b = c.el.querySelector('.lab b');
+    if (b) b.textContent = c.fmt ? c.fmt(shown) : shown + (c.unit ? ' ' + c.unit : '');
+    const inp = c.el.querySelector('input');
+    if (inp && document.activeElement !== inp) inp.value = shown;
+    c.el.querySelectorAll('.seg button').forEach(bt => bt.classList.toggle('on', String(bt.dataset.v) === String(v)));
+  }
+  for (const c of knobList(P)) {
+    if (!c.el) continue;
+    const v = c.opts ? get(P, c.key) : knobVal(c);
+    const kv = c.el.querySelector('.kv');
+    kv.textContent = fmtKnob(c, v); kv.classList.toggle('s', !!c.opts || String(kv.textContent).length > 4);
+    const f = c.opts ? c.opts.findIndex(o => String(o[0]) === String(v)) / (c.opts.length - 1) : (v - c.min) / (c.max - c.min);
+    c.el.querySelector('.arc').setAttribute('d', arcPath(f));
+    const sel = c === selKnob;
+    c.el.querySelector('.ring').setAttribute('stroke', sel ? 'var(--knobSel)' : 'var(--knobTrk)');
+    c.el.classList.toggle('chg', !!base && JSON.stringify(get(base, c.key)) !== JSON.stringify(get(P, c.key)));
+  }
+  updKHint();
+  $('selInfo').innerHTML = selKnob ? `<b>${selKnob.label}</b><br>${fmtKnob(selKnob, selKnob.opts ? get(P, selKnob.key) : knobVal(selKnob))} ${selKnob.unit || ''}` : T('Ayar seçilmedi');
+  $('nFio').textContent = P.FiO2;
+}
+
+function updKHint() {
+  const h = $('kHint'); if (!h) return;
+  if (isPS(P)) h.innerHTML = L('Soluğu hasta başlatır; akım tepe değerin eksp. tetik yüzdesine düşünce biter.', 'The patient starts the breath; it ends when flow falls to the exp. trigger percentage of peak flow.');
+  else if (isPR(P)) h.innerHTML = L(`Ventilatör ΔPinsp'i hedef VT'ye göre soluk soluk ayarlar: şu an`, `The ventilator adjusts ΔPinsp breath by breath to the target VT: now`) + ` <b>${sim ? sim.prvcP.toFixed(0) : P.Pinsp}</b> cmH₂O<br>` + timingHint(P);
+  else h.innerHTML = timingHint(P);
+}
+function timingHint(p) {
+  let ti, extra = '';
+  if (isV(p)) { const fl = p.Fset / 60; ti = (p.pattern === 'decel' ? 2 : 1) * p.Vt / fl; extra = p.pause > 0 ? ` + Tplato ${p.pause.toFixed(2)} s` : ''; }
+  else ti = p.Ti;
+  const tot = ti + (isV(p) ? p.pause : 0), cyc = 60 / p.rate, te = cyc - tot;
+  const ie = te > 0 ? `I:E 1:${(te / tot).toFixed(1)}` : '<b style="color:var(--warn)">' + L('Ti, solunum süresinden uzun', 'Ti is longer than the breath cycle') + '</b>';
+  return `Ti ${ti.toFixed(2)} s${extra}<br>${ie}`;
+}
+
+function renderHdr() {
+  const m = MODES[P.mode];
+  $('mName').textContent = sim ? m.name : T('BEKLEMEDE');
+  $('mSub').textContent = sim ? m.sub : '';
+  $('chat').textContent = m.chat;
+  $('kbMode').textContent = m.name + ' · ' + m.sub;
+  const mr = $('modeRow'); mr.innerHTML = `<div class="mh"><span>${T('Ventilasyon modu')}</span><button aria-label="${T('Kapat')}" id="mClose">✕</button></div>`;
+  $('mClose').onclick = () => openModes(false);
+  for (const k of ['VCV', 'PCV', 'PRVC', 'PSV']) {
+    const b = document.createElement('button'); b.className = 'mb';
+    b.textContent = MODES[k].name + ' · ' + MODES[k].sub;
+    b.classList.toggle('on', P.mode === k);
+    b.onclick = () => { change({ key: 'mode' }, k); openModes(false); };
+    mr.appendChild(b);
+  }
+}
+
+const TIPS = `<div class="card"><h3>Ayar püf noktaları</h3><ul>
+<li>En zararlı asenkroniler: çift tetik, ters tetik ve akım uyumsuzluğu.</li>
+<li>Tetik: oto-tetikleme yapmayan en duyarlı değer. Akım ve basınç tetiği arasındaki fark küçüktür.</li>
+<li>Frekans hastanın kendi frekansının altında. VT, Pplato ≤ 30 ise 8 mL/kg'a kadar.</li>
+<li>Auto-PEEP en aza indirilir; akım kısıtlılığında dış PEEP eklenir.</li>
+<li>Yüksek inspiratuvar akım nöral Ti'yi kısaltır ve frekansı artırır.</li>
+<li>Rampa: yüksek dürtüde hızlı, düşük dürtüde yavaş.</li>
+<li>Sinkroni konfor demek değildir: dispne sıktır ve yalnızca bir kısmı ayarla düzelir. Ağrıyı arayın; sedatif asenkroniyi çoğu zaman azaltmaz.</li>
+<li>Yedek frekanssız PSV uykuda periyodik solunuma ve uyku bölünmesine yol açabilir.</li>
+</ul></div>`;
+function renderInfo() {
+  const s = SCEN[curKey];
+  if (!curKey) { $('info').innerHTML = `<div class="card" style="grid-column:1/-1">${LANG === 'en' ? HTML_EN.howto : STATIC_TR.howto}</div>`; return; }
+  if (!s) {
+    $('info').innerHTML = `<div class="card" style="grid-column:1/-1"><p class="title">${T(curName)}</p><p style="color:var(--muted);margin:0">${L('Kendi ayarlarınız. Ekrandaki düğmelerden ve üstteki Hasta satırından değiştirin; Görünüm satırından adlandırıp kaydedebilirsiniz.', 'Your own settings. Change them with the knobs on the screen and the Patient row above; name and save them in the View row.')}</p></div>`;
+    return;
+  }
+  const k = curKey;
+  let h = `<div class="card" style="grid-column:1/-1"><p class="title">${sx(k, 'name')}</p><p style="color:var(--muted);margin:0">${sx(k, 'short')}</p></div>`;
+  h += `<div class="card"><h3>${L('Dalga formunda neye bakmalı', 'What to look for in the waveforms')}</h3><ul>${sx(k, 'look').map(x => '<li>' + x + '</li>').join('')}</ul></div>`;
+  h += `<div class="card"><h3>${L('Mekanizma', 'Mechanism')}</h3><p>${sx(k, 'mech')}</p></div>`;
+  if (s.causes) h += `<div class="card"><h3>${L('Nedenler', 'Causes')}</h3><ul>${sx(k, 'causes').map(x => '<li>' + x + '</li>').join('')}</ul></div>`;
+  h += LANG === 'en' ? TIPS_EN : TIPS;
+  if (s.fix) h += `<div class="card"><h3>${L('Düzeltme denemesi', 'Try the fix')}</h3><p><b>${sx(k, 'fixText')}</b></p><p>${sx(k, 'fixNote')}</p><p style="color:var(--muted)">${L('Üstteki <b>Ayarı düzelt</b> düğmesiyle uygulayın; dalga formu kesintisiz akmaya devam eder.', 'Apply it with the <b>Fix settings</b> button above; the waveforms keep sweeping without interruption.')}</p></div>`;
+  $('info').innerHTML = h;
+}
+
+// ---- Çizim (tarama/sweep modu) ----
+function resize() {
+  dpr = window.devicePixelRatio || 1;
+  const r = cv.getBoundingClientRect();
+  const nw = Math.max(200, Math.floor(r.width)), widthChanged = nw !== W;
+  W = nw; H = Math.max(200, Math.floor(r.height));
+  cv.width = W * dpr; cv.height = H * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  if (widthChanged || !cols) resetCols();
+}
+const LEFT = 58, RIGHT = 6, BOTTOM = 16;
+function plotW() { return W - LEFT - RIGHT; }
+function resetCols() {
+  const n = Math.max(1, plotW());
+  cols = CH.map(() => ({ f: new Float32Array(n).fill(NaN), mn: new Float32Array(n).fill(NaN), mx: new Float32Array(n).fill(NaN), l: new Float32Array(n).fill(NaN) }));
+  ppCol = new Float32Array(n).fill(NaN);
+  lastCol = -1;
+}
+function colOf(t) { return Math.floor(((t % WIN) / WIN) * plotW()); }
+
+function sample() {
+  const c = colOf(sim.t), o = sim.out;
+  if (c !== lastCol) {
+    let k = lastCol;
+    while (k !== c) {
+      k = (k + 1) % plotW();
+      for (const b of cols) { b.f[k] = NaN; b.mn[k] = NaN; b.mx[k] = NaN; b.l[k] = NaN; }
+      ppCol[k] = NaN;
+      if (lastCol < 0) break;
+    }
+    lastCol = c;
+  }
+  CH.forEach((ch, i) => {
+    const v = o[ch.k], b = cols[i];
+    if (isNaN(b.f[c])) { b.f[c] = v; b.mn[c] = v; b.mx[c] = v; }
+    else { if (v < b.mn[c]) b.mn[c] = v; if (v > b.mx[c]) b.mx[c] = v; }
+    b.l[c] = v;
+  });
+  ppCol[c] = o.pawp;
+}
+
+function lanes() {
+  const showP = $('cPmus').checked;
+  const list = showP ? CH : CH.slice(0, 3);
+  const weights = showP ? [1.15, 1.15, 0.9, 0.8] : [1.2, 1.2, 1];
+  const tot = weights.reduce((a, b) => a + b, 0);
+  const avail = H - 8 - BOTTOM;
+  let y = 4; const out = [];
+  list.forEach((ch, i) => { const h = avail * weights[i] / tot; out.push({ ch, i: CH.indexOf(ch), y0: y + 4, y1: y + h - 4 }); y += h; });
+  return out;
+}
+
+function draw() {
+  ctx.fillStyle = COL['--screen']; ctx.fillRect(0, 0, W, H);
+  const L = lanes(), pw = plotW();
+  const cur = sim ? colOf(sim.t) : -1;
+  const gap = Math.max(8, Math.floor(pw * 0.025));
+  const vStep = WIN <= 16 ? 1 : 2;
+  for (const ln of L) {
+    const ch = ln.ch, ymap = v => ln.y1 - (v - ch.min) / (ch.max - ch.min) * (ln.y1 - ln.y0);
+    ctx.strokeStyle = COL['--grid']; ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (const t of ch.ticks) { const y = Math.round(ymap(t)) + .5; ctx.moveTo(LEFT, y); ctx.lineTo(W - RIGHT, y); }
+    for (let s = vStep; s < WIN; s += vStep) { const x = Math.round(LEFT + s / WIN * pw) + .5; ctx.moveTo(x, ln.y0); ctx.lineTo(x, ln.y1); }
+    ctx.stroke();
+    if (ch.min < 0 && ch.max > 0) { ctx.strokeStyle = COL['--zero']; ctx.beginPath(); const y = Math.round(ymap(0)) + .5; ctx.moveTo(LEFT, y); ctx.lineTo(W - RIGHT, y); ctx.stroke(); }
+    const c = COL[ch.color];
+    ctx.fillStyle = c; ctx.font = '600 12px system-ui,sans-serif'; ctx.textAlign = 'left';
+    ctx.fillText(ch.name, 6, ln.y0 + 12);
+    ctx.fillStyle = COL['--tick']; ctx.font = '10px system-ui,sans-serif';
+    ctx.fillText(ch.unit, 6, ln.y0 + 25);
+    ctx.textAlign = 'right';
+    for (const t of ch.ticks) ctx.fillText(t, LEFT - 5, ymap(t) + 3);
+    if (!sim) continue;
+    const b = cols[ln.i];
+    ctx.strokeStyle = c; ctx.lineWidth = 2; ctx.lineJoin = 'round';
+    ctx.beginPath(); let pen = false;
+    const clamp = v => Math.max(ln.y0 - 2, Math.min(ln.y1 + 2, ymap(v)));
+    // eğri altı dolgu (sıfır çizgisine kadar)
+    const z = clamp(Math.max(ch.min, 0));
+    ctx.fillStyle = c; ctx.globalAlpha = .16;
+    for (let x = 0; x < pw; x++) {
+      const ahead = (x - cur + pw) % pw;
+      if ((ahead > 0 && ahead <= gap) || isNaN(b.l[x])) continue;
+      const y = clamp(b.l[x]);
+      ctx.fillRect(LEFT + x, Math.min(y, z), 1, Math.abs(y - z));
+    }
+    ctx.globalAlpha = 1;
+    for (let x = 0; x < pw; x++) {
+      const ahead = (x - cur + pw) % pw;
+      if (ahead > 0 && ahead <= gap) { pen = false; continue; }
+      if (isNaN(b.f[x])) { pen = false; continue; }
+      const X = LEFT + x;
+      if (!pen) { ctx.moveTo(X, clamp(b.f[x])); pen = true; } else ctx.lineTo(X, clamp(b.f[x]));
+      if (b.mx[x] - b.mn[x] > 0) { ctx.lineTo(X, clamp(b.mn[x])); ctx.lineTo(X, clamp(b.mx[x])); }
+      ctx.lineTo(X, clamp(b.l[x]));
+    }
+    ctx.stroke();
+    if (ch.k === 'paw') {
+      // VKV: pasif basınç (kesikli) ve gerçek eğriyle arasındaki alan = hastanın inspiratuvar işi
+      ctx.fillStyle = COL['--pmus']; ctx.globalAlpha = .28;
+      for (let x = 0; x < pw; x++) {
+        const ahead = (x - cur + pw) % pw;
+        if ((ahead > 0 && ahead <= gap) || isNaN(ppCol[x]) || isNaN(b.l[x])) continue;
+        const y1 = clamp(ppCol[x]), y2 = clamp(b.l[x]);
+        if (y2 > y1) ctx.fillRect(LEFT + x, y1, 1, y2 - y1);
+      }
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = COL['--pmus']; ctx.lineWidth = 1.5; ctx.setLineDash([5, 4]);
+      ctx.beginPath(); pen = false;
+      for (let x = 0; x < pw; x++) {
+        const ahead = (x - cur + pw) % pw;
+        if ((ahead > 0 && ahead <= gap) || isNaN(ppCol[x])) { pen = false; continue; }
+        if (!pen) { ctx.moveTo(LEFT + x, clamp(ppCol[x])); pen = true; } else ctx.lineTo(LEFT + x, clamp(ppCol[x]));
+      }
+      ctx.stroke(); ctx.setLineDash([]);
+    }
+  }
+  // zaman ekseni
+  ctx.fillStyle = COL['--tick']; ctx.font = '10px system-ui,sans-serif'; ctx.textAlign = 'center';
+  const lStep = WIN <= 8 ? 1 : WIN <= 16 ? 2 : 5;
+  for (let s = 0; s <= WIN; s += lStep) ctx.fillText(s + (s === WIN ? ' s' : ''), Math.min(W - 14, LEFT + s / WIN * pw), H - 4);
+  if (!sim) return;
+  ctx.fillStyle = COL['--accent']; ctx.globalAlpha = .45;
+  ctx.fillRect(LEFT + cur, 4, 2, H - 8 - BOTTOM); ctx.globalAlpha = 1;
+  const visible = t => { const a = sim.t - t; return a >= 0 && a < WIN * (1 - (gap + 2) / pw); };
+  const laneOf = k => L.find(l => l.ch.k === k);
+  const lp = laneOf('paw');
+  for (const br of sim.breaths) {
+    if (!visible(br.start)) continue;
+    const x = LEFT + colOf(br.start);
+    ctx.fillStyle = br.kind === 'time' ? COL['--timeTri'] : COL['--pmus'];
+    ctx.beginPath(); ctx.moveTo(x, lp.y1 - 9); ctx.lineTo(x - 5, lp.y1); ctx.lineTo(x + 5, lp.y1); ctx.fill();
+  }
+  const s = SCEN[curKey];
+  if ($('cMarks').checked && s) {
+    const placed = [];
+    for (const e of sim.events) {
+      if (!s.marks.includes(e.type) || !visible(e.t)) continue;
+      const ln = laneOf(e.ch) || laneOf('flow');
+      const x = LEFT + colOf(e.t);
+      ctx.font = '600 11px system-ui,sans-serif';
+      const lab = T(e.type), w = ctx.measureText(lab).width + 10;
+      const bx = Math.min(Math.max(LEFT, x - w / 2), W - RIGHT - w);
+      let row = 0;
+      while (placed.some(q => q.ln === ln && q.row === row && bx < q.x2 + 4 && bx + w > q.x1 - 4)) row++;
+      placed.push({ ln, row, x1: bx, x2: bx + w });
+      const y = ln.y0 + 4 + row * 18;
+      ctx.fillStyle = COL['--warn'];
+      roundRect(bx, y, w, 16, 4); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.textAlign = 'left'; ctx.fillText(lab, bx + 5, y + 12);
+      ctx.strokeStyle = COL['--warn']; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+      ctx.beginPath(); ctx.moveTo(x + .5, y + 16); ctx.lineTo(x + .5, ln.y1); ctx.stroke(); ctx.setLineDash([]);
+      if (e.t2 && visible(e.t2)) {
+        const x2 = LEFT + colOf(e.t2);
+        if (x2 > x) { ctx.strokeStyle = COL['--warn']; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x, ln.y1 - 3); ctx.lineTo(x2, ln.y1 - 3); ctx.stroke(); }
+      }
+    }
+  }
+  // tutma manevraları: gölgeli bölge
+  for (const m of [sim.meas.ihold, sim.meas.ehold]) {
+    if (!m || !visible(m.t - 1.5)) continue;
+    const x1 = LEFT + colOf(m.t - 1.5), x2 = LEFT + colOf(m.t);
+    if (x2 > x1) { ctx.fillStyle = COL['--accent']; ctx.globalAlpha = .1; ctx.fillRect(x1, lp.y0, x2 - x1, lp.y1 - lp.y0); ctx.globalAlpha = 1; }
+  }
+}
+function roundRect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+
+// ---- Sayısal değerler ve tutma sonuçları ----
+function clearNums() { ['nPpk', 'nPpl', 'nPeep', 'nDP', 'nVt', 'nRR', 'nEff', 'nMV', 'nTi', 'nIE', 'nCst', 'nTrg'].forEach(id => $(id).textContent = '--'); }
+let lastNumT = 0, lastBannerT = { i: -1, e: -1 }, bannerTimer = null;
+function peepTot() { const e = sim.meas.ehold; return e && sim.t - e.t < 60 ? e.peepTot : P.PEEP; }
+function updNums() {
+  if (sim.t - lastNumT < 0.25) return; lastNumT = sim.t;
+  checkHolds();
+  const done = sim.breaths.filter(b => b.end != null);
+  if (!done.length) return;
+  const last = done[done.length - 1];
+  $('nPpk').textContent = last.Ppeak.toFixed(0);
+  let ppl = last.Pplat, vtp = last.Vti;
+  const ih = sim.meas.ihold;
+  if (ppl == null && ih && sim.t - ih.t < 30) { ppl = ih.pplat; vtp = ih.vt; }
+  if (ppl != null) {
+    const dp = ppl - peepTot();
+    $('nPpl').textContent = ppl.toFixed(0);
+    $('nDP').textContent = dp.toFixed(0);
+    $('nDP').parentElement.classList.toggle('alert', dp > 15);
+    $('nCst').textContent = dp > 0.5 ? Math.round(vtp * 1000 / dp) : '--';
+  } else { $('nPpl').textContent = '--'; $('nDP').textContent = '--'; $('nCst').textContent = '--'; }
+  const pi = sim.curBreath ? sim.curBreath.peepi : 0;
+  $('nPeep').textContent = P.PEEP + ' / ' + pi.toFixed(1);
+  $('nPeep').parentElement.classList.toggle('alert', pi >= 1.5);
+  // tetik için gereken kas basıncı ≈ PEEPi + tetik eşiği (akım tetiğinde eşik akımı × direnç)
+  const thr = P.trigType === 'pressure' ? P.trigP : P.trig / 60 * (P.R + 1.5);
+  const te0 = pi + thr;
+  $('nTrg').textContent = te0.toFixed(1);
+  $('nTrg').parentElement.classList.toggle('alert', te0 >= 4);
+  if (isPR(P)) updKHint();
+  $('nVt').textContent = Math.round(Math.max(0, last.Vte) * 1000);
+  const starts = sim.breaths.map(b => b.start).filter(t => t > sim.t - 30);
+  let rr = 0;
+  if (starts.length >= 2) rr = (starts.length - 1) / (starts[starts.length - 1] - starts[0]) * 60;
+  $('nRR').textContent = rr ? rr.toFixed(0) : '--';
+  const ef = sim.efforts.map(e => e.start).filter(t => t > sim.t - 30 && t < sim.t);
+  let er = 0;
+  if (ef.length >= 2) er = (ef.length - 1) / (ef[ef.length - 1] - ef[0]) * 60;
+  $('nEff').textContent = ef.length >= 2 ? er.toFixed(0) : '0';
+  $('nEff').parentElement.classList.toggle('alert', ef.length >= 2 && rr > 0 && Math.abs(er - rr) > 3);
+  const recent = done.slice(-4);
+  const vte = recent.reduce((a, b) => a + Math.max(0, b.Vte), 0) / recent.length;
+  $('nMV').textContent = rr ? (vte * rr).toFixed(1) : '--';
+  $('nTi').textContent = (last.ti || 0).toFixed(2);
+  const te = last.end - last.start - (last.ti || 0);
+  $('nIE').textContent = te > 0 ? '1:' + (te / last.ti).toFixed(1) : '--';
+}
+function showBanner(html) {
+  const b = $('banner'); b.innerHTML = html; b.classList.add('on');
+  clearTimeout(bannerTimer); bannerTimer = setTimeout(() => b.classList.remove('on'), 9000);
+}
+function checkHolds() {
+  $('bIHold').classList.toggle('on', sim.holdReq === 'insp');
+  $('bEHold').classList.toggle('on', sim.holdReq === 'exp' || sim.phase === 'ehold');
+  const ih = sim.meas.ihold, eh = sim.meas.ehold;
+  if (ih && ih.t !== lastBannerT.i) {
+    lastBannerT.i = ih.t;
+    const pt = peepTot(), dp = ih.pplat - pt;
+    let txt = `<b>${T('İnspiratuvar tutma')}:</b> ${T('Pplato')} ${ih.pplat.toFixed(1)} · ΔP ${dp.toFixed(1)} cmH₂O · Cstat ${dp > 0.5 ? Math.round(ih.vt * 1000 / dp) : '--'} mL/cmH₂O`;
+    const last = sim.breaths[sim.breaths.length - 1];
+    if (isV(P) && P.pattern === 'square' && last) txt += ` · Rinsp ≈ ${((last.Ppeak - ih.pplat) / (P.Fset / 60)).toFixed(1)} cmH₂O/L/s`;
+    if (sim.efforts.some(e => e.start > ih.t - 1.6 && e.start < ih.t)) txt += ' <span style="color:var(--warn)">· ' + L('tutma sırasında hasta eforu var, ölçüm güvenilmez', 'patient effort during the hold, measurement unreliable') + '</span>';
+    showBanner(txt);
+  }
+  if (eh && eh.t !== lastBannerT.e) {
+    lastBannerT.e = eh.t;
+    const pi = eh.peepTot - P.PEEP;
+    let txt = `<b>${T('Ekspiratuvar tutma')}:</b> PEEPtot ${eh.peepTot.toFixed(1)} cmH₂O · auto-PEEP ${Math.max(0, pi).toFixed(1)} cmH₂O`;
+    if (sim.efforts.some(e => e.start > eh.t - 1.6 && e.start < eh.t)) txt += ' <span style="color:var(--warn)">· ' + L('tutma sırasında hasta eforu var, ölçüm güvenilmez', 'patient effort during the hold, measurement unreliable') + '</span>';
+    showBanner(txt);
+  }
+}
+
+// ---- Döngü ----
+let prevTs = null;
+function frame(ts) {
+  if (prevTs == null) prevTs = ts;
+  const real = Math.min(0.1, (ts - prevTs) / 1000); prevTs = ts;
+  if (sim && running) {
+    let n = Math.round(real * speed / DT);
+    while (n-- > 0) { step(sim, DT); sample(); }
+    updNums();
+  }
+  draw();
+  requestAnimationFrame(frame);
+}
+
+
+// ---- Başlık: saat ve asenkroni uyarısı ----
+let lastHdrT = 0;
+function updHdr() {
+  const now = new Date();
+  $('clock').textContent = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+  const al = $('alarm');
+  let msg = '';
+  if (sim) {
+    if (sim.holdReq === 'insp' || sim.holdReq === 'exp' || sim.phase === 'ehold' || (sim.phase === 'pause' && sim.pauseHold)) msg = T('Tutma manevrası');
+    const s = SCEN[curKey];
+    if (s && !msg) {
+      const ev = sim.events.filter(e => s.marks.includes(e.type) && sim.t - e.t < 3 && sim.t >= e.t).pop();
+      if (ev) msg = '⚠ ' + T(ev.type);
+    }
+  }
+  al.textContent = msg; al.classList.toggle('on', !!msg);
+}
+
+// ---- Kontroller ----
+function togglePause() {
+  if (!sim) return;
+  running = !running;
+  $('bPause').textContent = T(running ? 'Dalgaları dondur' : 'Devam et');
+  $('bPause').classList.toggle('on', !running);
+  $('frozen').classList.toggle('on', !running);
+}
+function toggleFs() {
+  const v = $('vent'), on = !v.classList.contains('fs');
+  v.classList.toggle('fs', on);
+  $('bFs').textContent = T(on ? 'Tam ekrandan çık' : 'Tam ekran');
+  try {
+    if (on && v.requestFullscreen) v.requestFullscreen().catch(() => {});
+    else if (!on && document.fullscreenElement) document.exitFullscreen();
+  } catch (e) {}
+  requestAnimationFrame(resize);
+}
+document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && $('vent').classList.contains('fs')) toggleFs(); });
+function setTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  store.set('theme', t); readColors();
+}
+function setSize(v) { cv.style.height = v + 'px'; $('rSize').value = v; $('vSize').textContent = v + ' px'; store.set('size', v); resize(); }
+function setWin(v) { WIN = v; $('rWin').value = v; $('vWin').textContent = v + ' s'; store.set('win', v); resetCols(); }
+function hold(kind) { if (sim) { sim.holdReq = sim.holdReq === kind ? null : kind; checkHolds(); } }
+
+$('bPause').onclick = togglePause;
+$('bFs').onclick = toggleFs;
+$('bFix').onclick = toggleFix;
+$('bIHold').onclick = () => hold('insp');
+$('bEHold').onclick = () => hold('exp');
+$('skDay').onclick = () => setTheme(document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light');
+function openModes(on) { $('modeRow').classList.toggle('on', on); $('skMode').classList.toggle('on', on); }
+$('skMode').onclick = $('modeBlk').onclick = e => { e.stopPropagation(); openModes(!$('modeRow').classList.contains('on')); };
+document.addEventListener('click', e => { if ($('modeRow').classList.contains('on') && !$('modeRow').contains(e.target)) openModes(false); });
+$('bSave').onclick = () => {
+  const name = $('presetName').value.trim() || (T('Ayar') + ' ' + (store.get('presets', []).length + 1));
+  const l = store.get('presets', []); l.push({ name, p: clone(P) }); store.set('presets', l);
+  $('presetName').value = ''; buildScen(); markScen();
+};
+$('bReset').onclick = () => {
+  if (SCEN[curKey]) return select(curKey);
+  const pr = curKey && curKey.startsWith('preset') ? store.get('presets', [])[+curKey.slice(6)] : null;
+  if (pr) return startCustom(pr.p, pr.name, curKey);
+  sim = null; curKey = null; P = normalize({ mode: 'VCV', pause: 0.3 }); base = clone(P);
+  running = false; selKnob = null; refreshAll(); clearNums();
+  $('overlay').style.display = ''; $('frozen').classList.remove('on'); $('banner').classList.remove('on');
+  ['bPause', 'bIHold', 'bEHold'].forEach(id => $(id).disabled = true);
+};
+document.querySelectorAll('#speed button').forEach(b => b.onclick = () => {
+  speed = +b.dataset.s; document.querySelectorAll('#speed button').forEach(x => x.classList.toggle('on', x === b));
+});
+$('rSize').oninput = e => setSize(+e.target.value);
+$('rWin').oninput = e => setWin(+e.target.value);
+$('kMinus').onclick = () => stepKnob(selKnob, -1);
+$('kPlus').onclick = () => stepKnob(selKnob, 1);
+
+// döner düğme: açısal sürükleme, tekerlek; tıklama seçimi onaylar (bırakır)
+(() => {
+  const r = $('rotary'), dot = $('rotDot');
+  let a0 = null, acc = 0, rot = 0, moved = false;
+  const ang = e => { const b = r.getBoundingClientRect(); return Math.atan2(e.clientY - (b.top + b.height / 2), e.clientX - (b.left + b.width / 2)) * 180 / Math.PI; };
+  const turn = d => { rot += d; dot.style.transform = `rotate(${rot}deg)`; };
+  r.addEventListener('pointerdown', e => { a0 = ang(e); acc = 0; moved = false; r.setPointerCapture(e.pointerId); });
+  r.addEventListener('pointermove', e => {
+    if (a0 == null) return;
+    let a = ang(e), d = a - a0; if (d > 180) d -= 360; if (d < -180) d += 360;
+    a0 = a; acc += d; turn(d);
+    while (Math.abs(acc) >= 18) { const s = Math.sign(acc); acc -= s * 18; moved = true; stepKnob(selKnob, s); }
+  });
+  r.addEventListener('pointerup', () => { if (!moved && selKnob) selectKnob(null); a0 = null; });
+  r.addEventListener('wheel', e => { e.preventDefault(); turn(e.deltaY < 0 ? 18 : -18); stepKnob(selKnob, e.deltaY < 0 ? 1 : -1); }, { passive: false });
+})();
+
+document.addEventListener('keydown', e => {
+  const ae = document.activeElement;
+  if (/INPUT|SELECT|TEXTAREA/.test(ae.tagName) && ae.type !== 'range') return;
+  if (e.code === 'Space') { e.preventDefault(); togglePause(); }
+  else if (e.key === 'f' || e.key === 'F') toggleFs();
+  else if (e.key === 'Escape') { if ($('modeRow').classList.contains('on')) openModes(false); else if ($('vent').classList.contains('fs')) toggleFs(); else selectKnob(null); }
+  else if (selKnob && (e.key === 'ArrowUp' || e.key === 'ArrowRight')) { e.preventDefault(); stepKnob(selKnob, 1); }
+  else if (selKnob && (e.key === 'ArrowDown' || e.key === 'ArrowLeft')) { e.preventDefault(); stepKnob(selKnob, -1); }
+});
+window.addEventListener('resize', resize);
+
+function setLang(l) {
+  LANG = l; store.set('lang', l);
+  localizeTables(); applyStatic();
+  buildScen(); buildPat(); knobSig = ''; refreshAll();
+  $('bPause').textContent = T(sim && !running ? 'Devam et' : 'Dalgaları dondur');
+  $('bFs').textContent = T($('vent').classList.contains('fs') ? 'Tam ekrandan çık' : 'Tam ekran');
+  updHdr();
+}
+document.querySelectorAll('#lang button').forEach(b => b.onclick = () => setLang(b.dataset.l));
+localizeTables(); applyStatic();
+buildScen(); buildPat(); refreshAll();
+$('bPause').textContent = T('Dalgaları dondur'); $('bFs').textContent = T('Tam ekran');
+setTheme(store.get('theme', 'light'));
+setSize(store.get('size', window.innerWidth < 640 ? 400 : 460));
+setWin(store.get('win', window.innerWidth < 640 ? 8 : 12));
+updHdr(); setInterval(updHdr, 250);
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
