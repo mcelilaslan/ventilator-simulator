@@ -242,6 +242,8 @@ canvas{display:block;width:100%;height:460px}
 .card p,.card ul{margin:0 0 6px}
 .card ul{padding-left:18px}
 .card li{margin:2px 0}
+.card details{margin-top:6px;color:var(--muted)}
+.card summary{cursor:pointer;font-weight:600;font-size:12.5px}
 .title{font-size:17px;font-weight:650;margin:0 0 2px}
 .legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12.5px;color:var(--muted);margin-top:8px}
 .legend i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:5px;vertical-align:middle}
@@ -934,16 +936,7 @@ HTML_EN.keys = `<h4>Keyboard and mouse</h4><ul>
       <li>Turn the rotary dial on the right, or use − / +</li>
       <li><kbd>Esc</kbd> releases the selected knob</li>
     </ul>`;
-const TIPS_EN = `<div class="card"><h3>Setting tips</h3><ul>
-<li>The most harmful asynchronies: double triggering, reverse triggering and flow asynchrony.</li>
-<li>Trigger: the most sensitive value that does not auto-trigger. Flow and pressure triggers differ little.</li>
-<li>Rate below the patient's own rate. VT up to 8 mL/kg if Pplat ≤ 30.</li>
-<li>Minimize auto-PEEP; with flow limitation, add external PEEP.</li>
-<li>A high inspiratory flow shortens neural Ti and raises the rate.</li>
-<li>Rise: fast with high drive, slow with low drive.</li>
-<li>Synchrony is not comfort: dyspnea is common and only part of it improves with settings. Look for pain; sedatives often do not reduce asynchrony.</li>
-<li>PSV without a backup rate can cause periodic breathing and sleep fragmentation.</li>
-</ul></div>`;
+const GEN_EN = `<li>The most harmful asynchronies: double triggering, reverse triggering and flow asynchrony.</li><li>Trigger: the most sensitive value that does not auto-trigger. Flow and pressure triggers differ little.</li><li>Rate below the patient's own rate. VT up to 8 mL/kg if Pplat ≤ 30.</li><li>Minimize auto-PEEP; with flow limitation, add external PEEP.</li><li>A high inspiratory flow shortens neural Ti and raises the rate.</li><li>Rise: fast with high drive, slow with low drive.</li><li>Synchrony is not comfort: dyspnea is common and only part of it improves with settings. Look for pain; sedatives often do not reduce asynchrony.</li><li>PSV without a backup rate can cause periodic breathing and sleep fragmentation.</li>`;
 let LANG = (() => { try { const v = localStorage.getItem('mvsim.lang'); if (v) return JSON.parse(v); } catch (e) {} return /^tr/i.test(navigator.language || '') ? 'tr' : 'en'; })();
 const T = s => (LANG === 'en' && EN[s] != null ? EN[s] : s);
 const L = (tr, en) => (LANG === 'en' ? en : tr);
@@ -1342,16 +1335,42 @@ function renderHdr() {
   }
 }
 
-const TIPS = `<div class="card"><h3>Ayar püf noktaları</h3><ul>
-<li>En zararlı asenkroniler: çift tetik, ters tetik ve akım uyumsuzluğu.</li>
-<li>Tetik: oto-tetikleme yapmayan en duyarlı değer. Akım ve basınç tetiği arasındaki fark küçüktür.</li>
-<li>Frekans hastanın kendi frekansının altında. VT, Pplato ≤ 30 ise 8 mL/kg'a kadar.</li>
-<li>Auto-PEEP en aza indirilir; akım kısıtlılığında dış PEEP eklenir.</li>
-<li>Yüksek inspiratuvar akım nöral Ti'yi kısaltır ve frekansı artırır.</li>
-<li>Rampa: yüksek dürtüde hızlı, düşük dürtüde yavaş.</li>
-<li>Sinkroni konfor demek değildir: dispne sıktır ve yalnızca bir kısmı ayarla düzelir. Ağrıyı arayın; sedatif asenkroniyi çoğu zaman azaltmaz.</li>
-<li>Yedek frekanssız PSV uykuda periyodik solunuma ve uyku bölünmesine yol açabilir.</li>
-</ul></div>`;
+// senaryoya özel ayar püf noktaları
+const STIPS = {
+  tr: {
+    normal_psv: ["PS'yi solunum sayısı, Vt ve yardımcı kas kullanımına bakarak titre edin.", "Tetik: oto-tetikleme yapmayan en duyarlı değer.", "ETS varsayılanı tepe akımın %25'i; KOAH'ta artırın, ARDS'de azaltın.", "Rampa: yüksek dürtüde hızlı, düşük dürtüde yavaş."],
+    normal_vcv: ["Ptepe − Pplato direnci, Pplato − PEEP (sürüş basıncı) kompliyansı yansıtır.", "Pplato ≤ 30 cmH₂O; Vt bu sınırda 8 mL/kg'a kadar çıkabilir.", "Tutma manevralarını hasta pasifken yapın; efor varsa ölçüm güvenilmez.", "Hasta tetiklemeye başlarsa akımı ve Ti'yi eforuna göre yeniden ayarlayın."],
+    iie: ["Desteği azaltın (PS ya da Vt): daha küçük soluk, daha uzun ekspiryum.", "PSV'de ETS'yi artırın; zaman döngülü modda Ti'yi kısaltın.", "Eksp. tutma ile auto-PEEP'i ölçün; akım kısıtlılığı varsa dış PEEP'i PEEPtot'un yaklaşık %80'ine çıkarın.", "Tetiği duyarlı yapın, ama auto-PEEP varken tek başına yetmez.", "Ventilatörün frekansını hastanın gerçek frekansıyla (göğüs hareketi) karşılaştırın."],
+    delay: ["Tetiği oto-tetiklemesiz en duyarlı değere çekin.", "Auto-PEEP'i azaltın: ETS'yi artırın, ekspiryumu uzatın.", "Akım ve basınç tetiği arasındaki fark küçüktür; asıl neden çoğu zaman auto-PEEP'tir.", "Aşırı destek dürtüyü azaltır ama tetikleme süresini uzatır."],
+    auto: ["Önce kaçak, devrede su ve sekresyonu kontrol edin.", "Tetik eşiğini artırın: kardiyak osilasyonda akım tetiğini birkaç L/dk yükseltmek çoğu zaman yeter.", "Frekans ayarın üstünde ve basınçta tetik çentiği yoksa oto-tetiklemeyi düşünün.", "NIV'de kaçak kompanzasyonunu gözden geçirin."],
+    peepi: ["Eksp. tutma ile PEEPtot'u ölçün.", "Dış PEEP'i adım adım PEEPtot'un yaklaşık %80'ine çıkarın; her adımda Ptepe'ye bakın, yükseliyorsa geri alın.", "Dakika ventilasyonunu azaltın, ekspiryumu uzatın, bronkodilatör verin.", "Tetiği daha duyarlı yapmak sorunu çözmez."],
+    prvc: ["Yüksek dürtülü hastada adaptif volüm modunu sorgulayın; sabit basınçlı destek (PSV ya da PKV) tercih edin.", "Hedef Vt'yi gözden geçirin; Pplato ≤ 30 ise 8 mL/kg'a kadar.", "Dürtünün nedenini arayın: ağrı, asidoz, ateş, anksiyete.", "Ptepe'nin soluk soluk PEEP'e indiğini görüyorsanız destek fiilen kalkmıştır."],
+    starve: ["VKV'de tepe akımı artırın ya da azalan paterne geçin.", "Basınç hedefli moda (PSV/PKV) geçin; akım talebe uyar.", "Basınç modunda rampayı hızlandırın.", "Kesikli pasif eğri ile gerçek eğri arasındaki alan küçülmeli.", "Yüksek akım nöral Ti'yi kısaltıp frekansı artırabilir; frekansı izleyin."],
+    double: ["VKV'de Ti'yi uzatın: akımı düşürün, azalan patern seçin, 0.2–0.3 s duraklama ekleyin.", "PKV'de Ti'yi hastanın nöral Ti'sine uydurun; PSV'de ETS'yi düşürün.", "Gerekirse Vt'yi artırın (Pplato ≤ 30).", "Ayarla düzelmezse dürtüyü baskılamak (sedasyon) gerekebilir."],
+    early: ["ETS'yi düşürün (ARDS'de %5–10).", "PS'yi artırın, rampayı yavaşlatın.", "Zaman döngülü modda Ti'yi uzatın.", "Çift tetiklemeye dönüşüyorsa öncelik verin: hacim yığılır."],
+    late: ["ETS'yi artırın (KOAH'ta %40–70).", "PS'yi azaltın, rampayı hızlandırın.", "Maksimum Ti'yi kısaltın ya da PKV'ye geçip Ti'yi hastanınkine uydurun.", "NIV'de kaçağı azaltın; kaçak inspiryumu uzatır."],
+    reverse: ["Sedasyonu azaltın, spontan moda geçin.", "Ti ya da frekans değişikliği sürüklenme oranını değiştirebilir, ama çoğu zaman yetmez.", "Çift tetik ve hacim yığılmasını izleyin (Vt, Pplato).", "Ağır ARDS'de farmakolojik baskılama gerekebilir."],
+    reverse_vc: ["Sedasyonu azaltın, spontan moda geçin.", "VKV'de çift tetik Vt'yi ikiye katlar; basınç moduna geçmek artışı sınırlar.", "Yığılan Vt ve Pplato'yu izleyin.", "Ağır ARDS'de farmakolojik baskılama gerekebilir."],
+    stack: ["Ekspiryum süresini uzatın: frekansı düşürün, Vt'yi azaltın, akımı artırıp Ti'yi kısaltın.", "Eksp. tutma ile auto-PEEP'i ölçün ve değişiklikten sonra tekrar ölçün.", "Bronkodilatör ve sekresyon temizliği.", "Hipotansiyon gelişirse dinamik hiperinflasyonu düşünün; ağırsa kısa süre devreyi ayırıp ekshalasyona izin verin."],
+  },
+  en: {
+    normal_psv: ["Titrate PS to respiratory rate, Vt and accessory muscle use.", "Trigger: the most sensitive value that does not auto-trigger.", "Default ETS is 25% of peak flow; raise it in COPD, lower it in ARDS.", "Rise: fast with high drive, slow with low drive."],
+    normal_vcv: ["Ppeak − Pplat reflects resistance; Pplat − PEEP (driving pressure) reflects compliance.", "Pplat ≤ 30 cmH₂O; within that limit Vt can go up to 8 mL/kg.", "Do hold maneuvers while the patient is passive; with effort the measurement is unreliable.", "If the patient starts triggering, readjust flow and Ti to their effort."],
+    iie: ["Reduce support (PS or Vt): smaller breaths, longer expiration.", "In PSV raise ETS; in time-cycled modes shorten Ti.", "Measure auto-PEEP with an expiratory hold; with flow limitation raise external PEEP to about 80% of PEEPtot.", "Make the trigger sensitive, but with auto-PEEP that alone is not enough.", "Compare the ventilator rate with the patient's true rate (chest movement)."],
+    delay: ["Set the trigger to the most sensitive value without auto-triggering.", "Reduce auto-PEEP: raise ETS, lengthen expiration.", "Flow and pressure triggers differ little; the main cause is usually auto-PEEP.", "Excess support lowers drive but lengthens triggering time."],
+    auto: ["First check for leaks, water and secretions in the circuit.", "Raise the trigger threshold: with cardiac oscillations a few L/min higher flow trigger is usually enough.", "Suspect auto-triggering when the rate is above the setting and there is no trigger notch in pressure.", "In NIV, review leak compensation."],
+    peepi: ["Measure PEEPtot with an expiratory hold.", "Raise external PEEP step by step to about 80% of PEEPtot; check Ppeak at each step and step back if it rises.", "Lower minute ventilation, lengthen expiration, give bronchodilators.", "Making the trigger more sensitive does not solve it."],
+    prvc: ["Question an adaptive volume mode in a high-drive patient; prefer fixed-pressure support (PSV or PCV).", "Review the target Vt; up to 8 mL/kg if Pplat ≤ 30.", "Look for the cause of the drive: pain, acidosis, fever, anxiety.", "If Ppeak falls to PEEP breath by breath, support has effectively been withdrawn."],
+    starve: ["In VCV raise peak flow or switch to a decelerating pattern.", "Switch to a pressure-targeted mode (PSV/PCV); flow follows demand.", "In a pressure mode make the rise faster.", "The area between the dashed passive curve and the real curve should shrink.", "High flow can shorten neural Ti and raise the rate; watch the rate."],
+    double: ["In VCV lengthen Ti: lower flow, choose a decelerating pattern, add a 0.2–0.3 s pause.", "In PCV match Ti to the patient's neural Ti; in PSV lower ETS.", "Raise Vt if needed (Pplat ≤ 30).", "If settings do not fix it, drive may need to be suppressed (sedation)."],
+    early: ["Lower ETS (5–10% in ARDS).", "Raise PS, slow the rise.", "In time-cycled modes lengthen Ti.", "Give it priority when it turns into double triggering: volume stacks."],
+    late: ["Raise ETS (40–70% in COPD).", "Lower PS, make the rise faster.", "Shorten maximum Ti, or switch to PCV and match Ti to the patient's.", "In NIV reduce the leak; leak prolongs inspiration."],
+    reverse: ["Lighten sedation, switch to a spontaneous mode.", "Changing Ti or rate may change the entrainment ratio, but often is not enough.", "Watch for double triggering and volume stacking (Vt, Pplat).", "Severe ARDS may need pharmacologic suppression."],
+    reverse_vc: ["Lighten sedation, switch to a spontaneous mode.", "In VCV a double trigger doubles Vt; a pressure mode limits the increase.", "Watch the stacked Vt and Pplat.", "Severe ARDS may need pharmacologic suppression."],
+    stack: ["Lengthen expiratory time: lower the rate, reduce Vt, raise flow to shorten Ti.", "Measure auto-PEEP with an expiratory hold and again after each change.", "Bronchodilators and secretion clearance.", "If hypotension develops, think of dynamic hyperinflation; if severe, briefly disconnect to let the patient exhale."],
+  },
+};
+const GEN_TR = `<li>En zararlı asenkroniler: çift tetik, ters tetik ve akım uyumsuzluğu.</li><li>Tetik: oto-tetikleme yapmayan en duyarlı değer. Akım ve basınç tetiği arasındaki fark küçüktür.</li><li>Frekans hastanın kendi frekansının altında. VT, Pplato ≤ 30 ise 8 mL/kg'a kadar.</li><li>Auto-PEEP en aza indirilir; akım kısıtlılığında dış PEEP eklenir.</li><li>Yüksek inspiratuvar akım nöral Ti'yi kısaltır ve frekansı artırır.</li><li>Rampa: yüksek dürtüde hızlı, düşük dürtüde yavaş.</li><li>Sinkroni konfor demek değildir: dispne sıktır ve yalnızca bir kısmı ayarla düzelir. Ağrıyı arayın; sedatif asenkroniyi çoğu zaman azaltmaz.</li><li>Yedek frekanssız PSV uykuda periyodik solunuma ve uyku bölünmesine yol açabilir.</li>`;
 function renderInfo() {
   const s = SCEN[curKey];
   if (!curKey) { $('info').innerHTML = `<div class="card" style="grid-column:1/-1">${LANG === 'en' ? HTML_EN.howto : STATIC_TR.howto}</div>`; return; }
@@ -1364,7 +1383,8 @@ function renderInfo() {
   h += `<div class="card"><h3>${L('Dalga formunda neye bakmalı', 'What to look for in the waveforms')}</h3><ul>${sx(k, 'look').map(x => '<li>' + x + '</li>').join('')}</ul></div>`;
   h += `<div class="card"><h3>${L('Mekanizma', 'Mechanism')}</h3><p>${sx(k, 'mech')}</p></div>`;
   if (s.causes) h += `<div class="card"><h3>${L('Nedenler', 'Causes')}</h3><ul>${sx(k, 'causes').map(x => '<li>' + x + '</li>').join('')}</ul></div>`;
-  h += LANG === 'en' ? TIPS_EN : TIPS;
+  const tips = STIPS[LANG === 'en' ? 'en' : 'tr'][k] || [];
+  h += `<div class="card"><h3>${L('Bu senaryo için ayar püf noktaları', 'Setting tips for this scenario')}</h3><ul>${tips.map(x => '<li>' + x + '</li>').join('')}</ul><details><summary>${L('Genel ilkeler', 'General principles')}</summary><ul>${LANG === 'en' ? GEN_EN : GEN_TR}</ul></details></div>`;
   if (s.fix) h += `<div class="card"><h3>${L('Düzeltme denemesi', 'Try the fix')}</h3><p><b>${sx(k, 'fixText')}</b></p><p>${sx(k, 'fixNote')}</p><p style="color:var(--muted)">${L('Üstteki <b>Ayarı düzelt</b> düğmesiyle uygulayın; dalga formu kesintisiz akmaya devam eder.', 'Apply it with the <b>Fix settings</b> button above; the waveforms keep sweeping without interruption.')}</p></div>`;
   $('info').innerHTML = h;
 }
