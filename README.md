@@ -7,7 +7,7 @@ Hasta-ventilatör asenkronisini öğretmek için canlı akan bir mekanik ventila
 **Live / Canlı:** https://mcelilaslan.github.io/ventilator-simulator/
 
 ## Features / Özellikler
-- Modes: VC-CMV, PC-CMV, PRVC, PSV
+- Modes: VCV, PCV, PRVC, PSV
 - 14 scenarios: normal breathing, ineffective effort, delayed and auto-triggering, auto-PEEP with external PEEP, flow starvation, falling support in PRVC, double triggering, early and delayed cycling, reverse triggering, air trapping
 - Adjustable patient: compliance, resistance, expiratory flow limitation, effort rate and strength, neural Ti, expiratory muscles, entrainment, cardiac oscillation; COPD and ARDS presets
 - Inspiratory and expiratory hold maneuvers, event marks, saved presets, day and night themes

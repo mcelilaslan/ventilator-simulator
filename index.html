@@ -391,7 +391,7 @@ footer{margin-top:16px;color:var(--muted);font-size:12px}
     <div class="card" style="grid-column:1/-1" data-i="howto">
       <p class="title">Nasıl kullanılır?</p>
       <p>Üstteki <b>Senaryo</b> düğmesine basıp (kısayol S) bir asenkroni tipi seçin; ekran gerçek bir ventilatör gibi soldan sağa tarar. Ventilatör ayarları ekranın altındaki yuvarlak düğmelerdedir: bir düğmeye tıklayın (sarı halka), sonra sağdaki döner düğmeyi çevirin ya da fare tekerleği, sürükleme veya ok tuşlarıyla değiştirin. Modu turuncu kutudan ya da <b>Ventilasyon modu…</b> tuşundan değiştirin. Hasta mekaniği ve eforu sağdaki <b>Hasta</b> bölümündedir (dar ekranda üstteki <b>Hasta ayarları</b> düğmesinde); klavye kısayolları da orada yazar. Mor iz hastanın kas eforudur (Pmus); gerçek ventilatörde görünmez, öğretim için gösterilir.</p>
-      <div class="legend"><span><i style="background:var(--paw)"></i>Basınç (Paw)</span><span><i style="background:var(--flow)"></i>Akım</span><span><i style="background:var(--vol)"></i>Hacim</span><span><i style="background:var(--pmus)"></i>Hasta eforu (Pmus)</span><span>▲ mor: hasta tetikledi · ▲ gri: zaman tetiklemeli</span><span>Kesikli mor çizgi (VKV): pasif hastada olacak basınç; aradaki gölge hastanın işi</span><span>Boşluk: dondur · F: tam ekran</span></div>
+      <div class="legend"><span><i style="background:var(--paw)"></i>Basınç (Paw)</span><span><i style="background:var(--flow)"></i>Akım</span><span><i style="background:var(--vol)"></i>Hacim</span><span><i style="background:var(--pmus)"></i>Hasta eforu (Pmus)</span><span>▲ mor: hasta tetikledi · ▲ gri: zaman tetiklemeli</span><span>Kesikli mor çizgi (VCV): pasif hastada olacak basınç; aradaki gölge hastanın işi</span><span>Boşluk: dondur · F: tam ekran</span></div>
     </div>
   </section>
 
@@ -618,7 +618,7 @@ function step(S, dt) {
   if (S.phase === 'insp' && S.curBreath.eff && !S.curBreath.lateFlag && p.mode !== 'VCV' && t > S.curBreath.eff.start + S.curBreath.eff.ti + 0.3) {
     S.curBreath.lateFlag = true; S.events.push({ t, type: 'GEÇ DÖNGÜ', ch: 'flow' });
   }
-  // akım açlığı: VKV'de inspiryum sırasında güçlü efor
+  // akım açlığı: VCV'de inspiryum sırasında güçlü efor
   if (S.phase === 'insp' && p.mode === 'VCV' && pmus > 4 && !S.curBreath.starve) {
     S.curBreath.starve = true; S.events.push({ t, type: 'AKIM AÇLIĞI', ch: 'paw' });
   }
@@ -634,7 +634,7 @@ function step(S, dt) {
   if (S.efforts.length > 20) S.efforts.splice(0, S.efforts.length - 20);
   if (S.breaths.length > 40) S.breaths.splice(0, S.breaths.length - 40);
   if (S.events.length > 60) S.events.splice(0, S.events.length - 60);
-  // pasif hastada aynı akım ve hacimle oluşacak basınç (VKV): aradaki fark hastanın işidir
+  // pasif hastada aynı akım ve hacimle oluşacak basınç (VCV): aradaki fark hastanın işidir
   const pawp = p.mode === 'VCV' && (S.phase === 'insp' || (S.phase === 'pause' && !S.pauseHold)) ? Paw + pmus : NaN;
   S.out = { pawp, paw: Paw, flow: Fm * 60, vol: (S.phase === 'insp' || S.phase === 'pause' ? S.Vtid : Math.max(0, (S.curBreath ? S.curBreath.Vti - S.curBreath.Vte : 0))) * 1000, pmus, palv: Palv };
   S.t = t + dt;
@@ -666,7 +666,7 @@ const SCEN = {
     p: { mode: 'VCV', PEEP: 5, Vt: 0.45, Fset: 50, pause: 0.3, rate: 14, trig: 2, C: 50, R: 10 },
     marks: [],
     look: ['Kare akım: inspiryum boyunca sabit akım.', 'Basınç doğrusal yükselir (Akım×R basamağı + Hacim×E rampası).', '0.3 s inspiratuvar duraklamada akım sıfırdır; basınç tepe değerden plato basıncına iner. Ptepe − Pplato direnci, Pplato − PEEP kompliyansı yansıtır.', 'Hasta eforu yok, tüm soluklar zaman tetiklemeli (gri ▲).'],
-    mech: "Pasif hastada basınç tamamen hareket denklemiyle belirlenir: Paw = Akım×R + Hacim×E + PEEP. VKV'de akım ve hacim sabittir; hasta efor yapsa bile değişmez, yalnızca basınç değişir. Asenkroni senaryolarındaki sapmaları bu referansla karşılaştırın.",
+    mech: "Pasif hastada basınç tamamen hareket denklemiyle belirlenir: Paw = Akım×R + Hacim×E + PEEP. VCV'de akım ve hacim sabittir; hasta efor yapsa bile değişmez, yalnızca basınç değişir. Asenkroni senaryolarındaki sapmaları bu referansla karşılaştırın.",
     causes: null,
   },
   iie: {
@@ -707,7 +707,7 @@ const SCEN = {
     look: ['Ekspiryum sonunda akım sıfıra inmez (EKSP. BİTMEDİ işareti: kesikli çizgi akımın inmesi gereken sıfır düzeyi, kalın çubuk kalan akım, sayı L/dk); efor geldiğinde akım önce sıfıra çekilir, soluk ancak sonra gelir ya da hiç gelmez.', 'Sağdaki Tetik eforu* değeri yüksek: hasta her solukta önce auto-PEEP\'i yenmek zorunda.', 'Eksp. tut ile PEEPtot\'u ölçün; dış PEEP\'i artırdıktan sonra tekrar ölçün. PEEPtot neredeyse değişmez, Ptepe de artmaz.'],
     mech: "Akım kısıtlılığında küçük hava yolları ekspiryumda kritik bir basınçta kapanır; alveoldeki basınç bu düzeyin altına inemez ve auto-PEEP oluşur. Hasta tetik için önce auto-PEEP'i, sonra tetik eşiğini aşmalıdır: auto-PEEP 10 ve tetik −1 cmH₂O ise 11 cmH₂O efor gerekir. Dış PEEP kritik basıncın altında kaldıkça ekspiratuvar akımı engellemez, ama hava yolu ile alveol arasındaki farkı kapatır: dış PEEP 7'ye çıkınca gereken efor 4 cmH₂O'ya iner. Auto-PEEP varken akım tetiği basınç tetiğinden üstün değildir; tetiği duyarlı yapmak sorunu çözmez.",
     causes: ["Hasta: ekspiratuvar akım kısıtlılığı (KOAH, astım), uzun zaman sabiti", "Ventilatör: yüksek dakika ventilasyonu, yüksek Vt ya da PS, kısa ekspiryum süresi", "Dış PEEP'in auto-PEEP'e göre düşük olması"],
-    fixNote: "Dış PEEP PEEPtot'un yaklaşık %80'ine çıkınca eforların hepsi tetikler ve gecikme kısalır; hiperinflasyon artmaz. Dış PEEP dinamik hava hapsini gidermez: akım yine sıfıra inmez ve tetikte kısa bir gecikme kalır; bunun için dakika ventilasyonu azaltılır ve ekspiryum uzatılır. VKV'de PEEP eklenince Ptepe yükseliyorsa akım kısıtlılığı yoktur ya da PEEP fazladır, aşırı şişme olur: PEEP geri alınır. Diğer yollar: dakika ventilasyonunu azaltmak, ekspiryumu uzatmak, bronkodilatör. Hasta ayarlarındaki Akım kısıtlılığı ayarını sıfıra çekip aynı PEEP artışını deneyin: bu kez PEEPtot ve Ptepe de yükselir.",
+    fixNote: "Dış PEEP PEEPtot'un yaklaşık %80'ine çıkınca eforların hepsi tetikler ve gecikme kısalır; hiperinflasyon artmaz. Dış PEEP dinamik hava hapsini gidermez: akım yine sıfıra inmez ve tetikte kısa bir gecikme kalır; bunun için dakika ventilasyonu azaltılır ve ekspiryum uzatılır. VCV'de PEEP eklenince Ptepe yükseliyorsa akım kısıtlılığı yoktur ya da PEEP fazladır, aşırı şişme olur: PEEP geri alınır. Diğer yollar: dakika ventilasyonunu azaltmak, ekspiryumu uzatmak, bronkodilatör. Hasta ayarlarındaki Akım kısıtlılığı ayarını sıfıra çekip aynı PEEP artışını deneyin: bu kez PEEPtot ve Ptepe de yükselir.",
   },
   prvc: {
     name: 'PRVC\'de destek azalması', short: 'Hasta çektikçe basınç düşer',
@@ -720,24 +720,24 @@ const SCEN = {
     fixNote: "Sabit basınçlı destekte akım talebe göre artar ve destek geri çekilmez. Hedef VT'yi artırmak da bir seçenektir, ama Pplato ≤ 30 ise VT 8 mL/kg'a kadar çıkılabilir. Talebin nedeni (ağrı, asidoz) ayrıca araştırılır.",
   },
   starve: {
-    name: 'Akım açlığı', short: 'VKV, yetersiz akım',
+    name: 'Akım açlığı', short: 'VCV, yetersiz akım',
     p: { mode: 'VCV', PEEP: 5, Vt: 0.45, Fset: 30, rate: 12, trig: 2, C: 45, R: 10, pt: { rr: 24, pmax: 14, ti: 0.9, jitter: 0.12 } },
-    fix: { mode: 'PSV', PS: 8, rise: 0.1, ETS: 25 }, fixText: 'VKV → PSV 8 cmH₂O',
+    fix: { mode: 'PSV', PS: 8, rise: 0.1, ETS: 25 }, fixText: 'VCV → PSV 8 cmH₂O',
     marks: ['AKIM AÇLIĞI'],
-    look: ['Basınç eğrisinde inspiryum sırasında içe çökme (yukarı konkavite); pasif VKV\'deki düz rampanın yerine.', 'Güçlü eforda basınç PEEP\'in altına inebilir.', 'Akım kare ve sabit: hastanın talebi artsa da değişmiyor.', 'Kesikli mor çizgi pasif hastadaki basınçtır; gerçek eğriyle arasındaki gölgeli alan hastanın yaptığı iştir.', 'Ptepe soluktan soluğa değişir, çünkü her soluktaki efor farklıdır.'],
+    look: ['Basınç eğrisinde inspiryum sırasında içe çökme (yukarı konkavite); pasif VCV\'deki düz rampanın yerine.', 'Güçlü eforda basınç PEEP\'in altına inebilir.', 'Akım kare ve sabit: hastanın talebi artsa da değişmiyor.', 'Kesikli mor çizgi pasif hastadaki basınçtır; gerçek eğriyle arasındaki gölgeli alan hastanın yaptığı iştir.', 'Ptepe soluktan soluğa değişir, çünkü her soluktaki efor farklıdır.'],
     mech: "Akım sabitlendiğinde basınç eğrisinin eğimi, verilen akımın hastanın istediği akıma oranını yansıtır. Basınç PEEP'in altına iniyorsa ventilatör yük ekliyordur. Akımı artırmak dürtüyü ve kas işini azaltır, ama solunum hızını artırabilir. Basınç hedefli solukta akım bağımlı değişkendir ve talebe göre artar; bu yüzden talebe daha iyi uyar. Akım uyumsuzluğu en zararlı asenkronilerdendir.",
-    causes: ["Ventilatör: VKV'de akım çok düşük; basınç modlarında rampa çok yavaş", "Hasta: yüksek efor ve ventilasyon talebi", "Mod seçimi"],
-    fixNote: 'Basınç hedefli modda akım talebe göre artar; basınç eğrisi düzleşir. Bu hastada Vt büyür, dürtü yüksektir. VKV\'de kalınacaksa akım artırılır ya da azalan paterne geçilir (Akım düğmesini 30→60 yapıp gölgeli alanın küçüldüğünü izleyin). Güçlü eforda basınç modu transpulmoner basıncı ayarlanan basıncın çok üstüne çıkarabilir; bunu da izleyin.',
+    causes: ["Ventilatör: VCV'de akım çok düşük; basınç modlarında rampa çok yavaş", "Hasta: yüksek efor ve ventilasyon talebi", "Mod seçimi"],
+    fixNote: 'Basınç hedefli modda akım talebe göre artar; basınç eğrisi düzleşir. Bu hastada Vt büyür, dürtü yüksektir. VCV\'de kalınacaksa akım artırılır ya da azalan paterne geçilir (Akım düğmesini 30→60 yapıp gölgeli alanın küçüldüğünü izleyin). Güçlü eforda basınç modu transpulmoner basıncı ayarlanan basıncın çok üstüne çıkarabilir; bunu da izleyin.',
   },
   double: {
     name: 'Çift tetikleme', short: 'Arka arkaya iki soluk',
     p: { mode: 'VCV', PEEP: 5, Vt: 0.40, Fset: 60, rate: 12, trig: 2, C: 40, R: 10, pt: { rr: 20, pmax: 12, ti: 1.2, jitter: 0.05 } },
     fix: { Fset: 40, pattern: 'decel', pause: 0.3 }, fixText: 'Akım 60→40 L/dk, azalan patern, Tplato 0.3 s',
     marks: ['ÇİFT'],
-    look: ['Tek eforda iki soluk; aradaki ekspiryum ortalama Ti\'nin yarısından kısa.', 'İkinci solukta hacim yığılır, tepe basınç yükselir (VKV\'de Vt yaklaşık iki katı).', 'Ekspiryum başında akım hızla tersine dönüp yeniden tetikler.'],
+    look: ['Tek eforda iki soluk; aradaki ekspiryum ortalama Ti\'nin yarısından kısa.', 'İkinci solukta hacim yığılır, tepe basınç yükselir (VCV\'de Vt yaklaşık iki katı).', 'Ekspiryum başında akım hızla tersine dönüp yeniden tetikler.'],
     mech: "Hastanın nöral inspiryum süresi ventilatörünkinden uzun. Makine döngüye girdiğinde hasta hâlâ çeker; talep yüksekse ikinci tetik gelir. İki soluk arasında ekspiryum çok kısadır ve hacim yığılır (breath stacking). Erken döngüyle aynı olayın ağır hâlidir. Ters tetik ve akım uyumsuzluğuyla birlikte en zararlı asenkronilerdendir.",
     causes: ["Ventilatör: zaman döngülü modda kısa Ti; akım döngülü modda yüksek ETS; düşük PS; kısa rampa; akım açlığı", "Hasta: yüksek ventilasyon talebi ve dürtü, kısa zaman sabiti, ters tetikleme"],
-    fixNote: "Üç değişiklik de VKV'de Ti'yi uzatır (0.4 s → yaklaşık 1.5 s) ve soluk hastanın nöral inspiryumu kadar sürer; tek efor tek soluk olur. PKV'de Ti uzatılır, PSV'de ETS düşürülür. Ayarla düzelmezse dürtü farmakolojik olarak baskılanır.",
+    fixNote: "Üç değişiklik de VCV'de Ti'yi uzatır (0.4 s → yaklaşık 1.5 s) ve soluk hastanın nöral inspiryumu kadar sürer; tek efor tek soluk olur. PCV'de Ti uzatılır, PSV'de ETS düşürülür. Ayarla düzelmezse dürtü farmakolojik olarak baskılanır.",
   },
   early: {
     name: 'Erken döngü', short: 'Soluk hastadan önce biter',
@@ -755,12 +755,12 @@ const SCEN = {
     fix: { ETS: 40, PS: 12, rise: 0.1 }, fixText: 'ETS %5→40, PS 18→12, rampa 0.3→0.1 s',
     marks: ['GEÇ DÖNGÜ', 'BASINÇ ÇIKINTISI'],
     look: ["Akım işareti: inspiratuvar akımda hızlı düşüş, ardından yatık uzun kuyruk.", "Gecikme uzayınca hasta ekspiratuvar kaslarını kasar (mor iz negatif); inspiryum sonunda geniş, yuvarlak bir basınç çıkıntısı (T dalgası gibi) görülür; ventilatör çıkıntının iniş kolunda döngüye girer."],
-    mech: "Hastanın inspiryumu bitmiş, hava yolu hâlâ basınçlı. Ekspiratuvar kaslar alveol basıncını yükseltir; bu basınç hava yolu basıncını geçince hasta devreye üfler ve hava yolu basıncı yükselir. Ventilatör nöral ekspiryuma taşınca engelsiz ekspiryum süresi kısalır, sonraki tetik için daha büyük efor gerekir ve dinamik hiperinflasyon artar. PSV'de akım ölçütünün yanında iki ikincil döngü ölçütü vardır: basınç (ayarın birkaç cmH₂O üstü) ve süre (maksimum Ti). VKV'de aktif ekspiryum basınç döngüsüne yol açar (bucking); Vt düşer, alarm çalar.",
-    causes: ["Ventilatör: ETS çok düşük, PS çok yüksek, rampa çok uzun; PKV'de uzun Ti; VKV'de düşük akım, uzun Ti, yüksek Vt", "Hasta: uzun zaman sabiti (KOAH)", "NIV: kaçak inspiryumu uzatır (inspiratory hang-up)"],
-    fixNote: "Yüksek ETS ve düşük PS soluğu hastanın eforuyla birlikte bitirir; ekspiratuvar kas kasılması ve basınç çıkıntısı kaybolur. KOAH'ta ETS'yi tepe akımın %40–70'ine çıkarmak sinkroniyi düzeltir, eforu ve dinamik hiperinflasyonu azaltır. Bir başka yol PKV'ye geçip Ti'yi hastanınkine uydurmaktır.",
+    mech: "Hastanın inspiryumu bitmiş, hava yolu hâlâ basınçlı. Ekspiratuvar kaslar alveol basıncını yükseltir; bu basınç hava yolu basıncını geçince hasta devreye üfler ve hava yolu basıncı yükselir. Ventilatör nöral ekspiryuma taşınca engelsiz ekspiryum süresi kısalır, sonraki tetik için daha büyük efor gerekir ve dinamik hiperinflasyon artar. PSV'de akım ölçütünün yanında iki ikincil döngü ölçütü vardır: basınç (ayarın birkaç cmH₂O üstü) ve süre (maksimum Ti). VCV'de aktif ekspiryum basınç döngüsüne yol açar (bucking); Vt düşer, alarm çalar.",
+    causes: ["Ventilatör: ETS çok düşük, PS çok yüksek, rampa çok uzun; PCV'de uzun Ti; VCV'de düşük akım, uzun Ti, yüksek Vt", "Hasta: uzun zaman sabiti (KOAH)", "NIV: kaçak inspiryumu uzatır (inspiratory hang-up)"],
+    fixNote: "Yüksek ETS ve düşük PS soluğu hastanın eforuyla birlikte bitirir; ekspiratuvar kas kasılması ve basınç çıkıntısı kaybolur. KOAH'ta ETS'yi tepe akımın %40–70'ine çıkarmak sinkroniyi düzeltir, eforu ve dinamik hiperinflasyonu azaltır. Bir başka yol PCV'ye geçip Ti'yi hastanınkine uydurmaktır.",
   },
   reverse: {
-    name: 'Ters tetikleme (PKV)', short: 'Makine soluğu eforu tetikler',
+    name: 'Ters tetikleme (PCV)', short: 'Makine soluğu eforu tetikler',
     p: { mode: 'PCV', PEEP: 5, Pinsp: 15, Ti: 0.9, rate: 16, rise: 0.1, trig: 2, C: 40, R: 10, reverse: { delay: 0.55, pmax: 10, ti: 0.8, ratio: 1 } },
     fix: { mode: 'PSV', PS: 10, ETS: 25, rate: 0, reverse: null, pt: { rr: 16, pmax: 6, ti: 0.9, jitter: 0.08 } }, fixText: 'Sedasyonu azalt, PCV → PSV 10',
     marks: ['TERS TETİK', 'ÇİFT'],
@@ -770,12 +770,12 @@ const SCEN = {
     fixNote: 'Sedasyon azalıp spontan moda geçilince hasta kendi ritmiyle tetikler. Ters tetik ventilatör ayarıyla çoğu zaman düzelmez; en zararlı asenkronilerdendir ve ağır ARDS\'de farmakolojik baskılama gerekebilir.',
   },
   reverse_vc: {
-    name: 'Ters tetikleme (VKV)', short: 'Sürüklenme, VKV\'de çift tetik',
+    name: 'Ters tetikleme (VCV)', short: 'Sürüklenme, VCV\'de çift tetik',
     p: { mode: 'VCV', PEEP: 5, Vt: 0.45, Fset: 50, rate: 16, trig: 2, C: 40, R: 10, reverse: { delay: 0.45, pmax: 10, ti: 0.8, ratio: 1 } },
-    fix: { mode: 'PSV', PS: 10, ETS: 25, rise: 0.1, rate: 0, reverse: null, pt: { rr: 16, pmax: 6, ti: 0.9, jitter: 0.08 } }, fixText: 'Sedasyonu azalt, VKV → PSV 10',
+    fix: { mode: 'PSV', PS: 10, ETS: 25, rise: 0.1, rate: 0, reverse: null, pt: { rr: 16, pmax: 6, ti: 0.9, jitter: 0.08 } }, fixText: 'Sedasyonu azalt, VCV → PSV 10',
     marks: ['TERS TETİK', 'ÇİFT'],
     look: ['Zaman tetiklemeli soluk (gri ▲) başladıktan sonra mor efor gelir.', 'Akım sabit olduğu için efor basınç eğrisinde içe çökme yapar.', 'Efor ekspiryuma taşınca ikinci soluk tetiklenir: hacim yığılır, tepe basınç ve auto-PEEP artar.'],
-    mech: "Ters tetikleme çift tetiklemeye yol açabilir. VKV'de çift tetikleme Vt'yi ikiye katlar; PKV'de artış iki kattan azdır. Sürüklenme oranı Hasta ayarlarından değiştirilebilir (1:1, 1:2, 1:3).",
+    mech: "Ters tetikleme çift tetiklemeye yol açabilir. VCV'de çift tetikleme Vt'yi ikiye katlar; PCV'de artış iki kattan azdır. Sürüklenme oranı Hasta ayarlarından değiştirilebilir (1:1, 1:2, 1:3).",
     causes: ["Derin sedasyon, kontrollü mod", "ARDS", "Ters tetikleme çift tetiklemenin nedenlerinden biridir"],
     fixNote: 'Spontan modda hasta kendi ritmiyle tetikler; yığılma kaybolur.',
   },
@@ -925,7 +925,7 @@ const EN = {
   'Normal': 'Normal', 'Tetikleme': 'Triggering', 'Akım verme': 'Flow delivery', 'Sonlanma (döngü)': 'Cycling', 'Diğer': 'Other',
   // modlar
   'Volüm kontrol (A/C)': 'Volume control (A/C)', 'Basınç kontrol (A/C)': 'Pressure control (A/C)',
-  'Basınç ayarlı volüm kontrol': 'Pressure-regulated volume control', 'Basınç destek': 'Pressure support',
+  'Basınç ayarlı volüm kontrol': 'Pressure-regulated volume control', 'Basınç destek': 'Pressure support', 'Spontan': 'Spontaneous',
   // kanallar ve birimler
   'Akım': 'Flow', 'Hacim': 'Volume', 'L/dk': 'L/min', '/dk': '/min',
   // düğmeler
@@ -1059,10 +1059,10 @@ const isV = p => p.mode === 'VCV', isPC = p => p.mode === 'PCV', isPR = p => p.m
 const get = (o, path) => path.split('.').reduce((a, k) => a[k], o);
 function set(o, path, v) { const ks = path.split('.'); const last = ks.pop(); ks.reduce((a, k) => a[k], o)[last] = v; }
 const MODES = {
-  VCV: { name: 'VC-CMV', sub: 'Volüm kontrol (A/C)', chat: 'VC-CMVs' },
-  PCV: { name: 'PC-CMV', sub: 'Basınç kontrol (A/C)', chat: 'PC-CMVs' },
-  PRVC: { name: 'PRVC', sub: 'Basınç ayarlı volüm kontrol', chat: 'PC-CMVa' },
-  PSV: { name: 'SPN-CPAP/PS', sub: 'Basınç destek', chat: 'PC-CSVs' },
+  VCV: { name: 'VCV', sub: 'Volüm kontrol (A/C)', chat: 'A/C' },
+  PCV: { name: 'PCV', sub: 'Basınç kontrol (A/C)', chat: 'A/C' },
+  PRVC: { name: 'PRVC', sub: 'Basınç ayarlı volüm kontrol', chat: 'A/C' },
+  PSV: { name: 'PSV', sub: 'Basınç destek', chat: 'Spontan' },
 };
 
 // ---- Senaryo satırı ----
@@ -1364,7 +1364,7 @@ function renderHdr() {
   const m = MODES[P.mode];
   $('mName').textContent = sim ? m.name : T('BEKLEMEDE');
   $('mSub').textContent = sim ? m.sub : '';
-  $('chat').textContent = m.chat;
+  $('chat').textContent = T(m.chat);
   $('kbMode').textContent = m.name + ' · ' + m.sub;
   const mr = $('modeRow'); mr.innerHTML = `<div class="mh"><span>${T('Ventilasyon modu')}</span><button aria-label="${T('Kapat')}" id="mClose">✕</button></div>`;
   $('mClose').onclick = () => openModes(false);
@@ -1386,13 +1386,13 @@ const STIPS = {
     delay: ["Tetiği oto-tetiklemesiz en duyarlı değere çekin.", "Auto-PEEP'i azaltın: ETS'yi artırın, ekspiryumu uzatın.", "Akım ve basınç tetiği arasındaki fark küçüktür; asıl neden çoğu zaman auto-PEEP'tir.", "Aşırı destek dürtüyü azaltır ama tetikleme süresini uzatır."],
     auto: ["Önce kaçak, devrede su ve sekresyonu kontrol edin.", "Tetik eşiğini artırın: kardiyak osilasyonda akım tetiğini birkaç L/dk yükseltmek çoğu zaman yeter.", "Frekans ayarın üstünde ve basınçta tetik çentiği yoksa oto-tetiklemeyi düşünün.", "NIV'de kaçak kompanzasyonunu gözden geçirin."],
     peepi: ["Eksp. tutma ile PEEPtot'u ölçün.", "Dış PEEP'i adım adım PEEPtot'un yaklaşık %80'ine çıkarın; her adımda Ptepe'ye bakın, yükseliyorsa geri alın.", "Dakika ventilasyonunu azaltın, ekspiryumu uzatın, bronkodilatör verin.", "Tetiği daha duyarlı yapmak sorunu çözmez."],
-    prvc: ["Yüksek dürtülü hastada adaptif volüm modunu sorgulayın; sabit basınçlı destek (PSV ya da PKV) tercih edin.", "Hedef Vt'yi gözden geçirin; Pplato ≤ 30 ise 8 mL/kg'a kadar.", "Dürtünün nedenini arayın: ağrı, asidoz, ateş, anksiyete.", "Ptepe'nin soluk soluk PEEP'e indiğini görüyorsanız destek fiilen kalkmıştır."],
-    starve: ["VKV'de tepe akımı artırın ya da azalan paterne geçin.", "Basınç hedefli moda (PSV/PKV) geçin; akım talebe uyar.", "Basınç modunda rampayı hızlandırın.", "Kesikli pasif eğri ile gerçek eğri arasındaki alan küçülmeli.", "Yüksek akım nöral Ti'yi kısaltıp frekansı artırabilir; frekansı izleyin."],
-    double: ["VKV'de Ti'yi uzatın: akımı düşürün, azalan patern seçin, 0.2–0.3 s duraklama ekleyin.", "PKV'de Ti'yi hastanın nöral Ti'sine uydurun; PSV'de ETS'yi düşürün.", "Gerekirse Vt'yi artırın (Pplato ≤ 30).", "Ayarla düzelmezse dürtüyü baskılamak (sedasyon) gerekebilir."],
+    prvc: ["Yüksek dürtülü hastada adaptif volüm modunu sorgulayın; sabit basınçlı destek (PSV ya da PCV) tercih edin.", "Hedef Vt'yi gözden geçirin; Pplato ≤ 30 ise 8 mL/kg'a kadar.", "Dürtünün nedenini arayın: ağrı, asidoz, ateş, anksiyete.", "Ptepe'nin soluk soluk PEEP'e indiğini görüyorsanız destek fiilen kalkmıştır."],
+    starve: ["VCV'de tepe akımı artırın ya da azalan paterne geçin.", "Basınç hedefli moda (PSV/PCV) geçin; akım talebe uyar.", "Basınç modunda rampayı hızlandırın.", "Kesikli pasif eğri ile gerçek eğri arasındaki alan küçülmeli.", "Yüksek akım nöral Ti'yi kısaltıp frekansı artırabilir; frekansı izleyin."],
+    double: ["VCV'de Ti'yi uzatın: akımı düşürün, azalan patern seçin, 0.2–0.3 s duraklama ekleyin.", "PCV'de Ti'yi hastanın nöral Ti'sine uydurun; PSV'de ETS'yi düşürün.", "Gerekirse Vt'yi artırın (Pplato ≤ 30).", "Ayarla düzelmezse dürtüyü baskılamak (sedasyon) gerekebilir."],
     early: ["ETS'yi düşürün (ARDS'de %5–10).", "PS'yi artırın, rampayı yavaşlatın.", "Zaman döngülü modda Ti'yi uzatın.", "Çift tetiklemeye dönüşüyorsa öncelik verin: hacim yığılır."],
-    late: ["ETS'yi artırın (KOAH'ta %40–70).", "PS'yi azaltın, rampayı hızlandırın.", "Maksimum Ti'yi kısaltın ya da PKV'ye geçip Ti'yi hastanınkine uydurun.", "NIV'de kaçağı azaltın; kaçak inspiryumu uzatır."],
+    late: ["ETS'yi artırın (KOAH'ta %40–70).", "PS'yi azaltın, rampayı hızlandırın.", "Maksimum Ti'yi kısaltın ya da PCV'ye geçip Ti'yi hastanınkine uydurun.", "NIV'de kaçağı azaltın; kaçak inspiryumu uzatır."],
     reverse: ["Sedasyonu azaltın, spontan moda geçin.", "Ti ya da frekans değişikliği sürüklenme oranını değiştirebilir, ama çoğu zaman yetmez.", "Çift tetik ve hacim yığılmasını izleyin (Vt, Pplato).", "Ağır ARDS'de farmakolojik baskılama gerekebilir."],
-    reverse_vc: ["Sedasyonu azaltın, spontan moda geçin.", "VKV'de çift tetik Vt'yi ikiye katlar; basınç moduna geçmek artışı sınırlar.", "Yığılan Vt ve Pplato'yu izleyin.", "Ağır ARDS'de farmakolojik baskılama gerekebilir."],
+    reverse_vc: ["Sedasyonu azaltın, spontan moda geçin.", "VCV'de çift tetik Vt'yi ikiye katlar; basınç moduna geçmek artışı sınırlar.", "Yığılan Vt ve Pplato'yu izleyin.", "Ağır ARDS'de farmakolojik baskılama gerekebilir."],
     stack: ["Ekspiryum süresini uzatın: frekansı düşürün, Vt'yi azaltın, akımı artırıp Ti'yi kısaltın.", "Eksp. tutma ile auto-PEEP'i ölçün ve değişiklikten sonra tekrar ölçün.", "Bronkodilatör ve sekresyon temizliği.", "Hipotansiyon gelişirse dinamik hiperinflasyonu düşünün; ağırsa kısa süre devreyi ayırıp ekshalasyona izin verin."],
   },
   en: {
@@ -1566,7 +1566,7 @@ function draw() {
     }
     ctx.stroke();
     if (ch.k === 'paw') {
-      // VKV: pasif basınç (kesikli) ve gerçek eğriyle arasındaki alan = hastanın inspiratuvar işi
+      // VCV: pasif basınç (kesikli) ve gerçek eğriyle arasındaki alan = hastanın inspiratuvar işi
       ctx.fillStyle = COL['--pmus']; ctx.globalAlpha = .28;
       for (let x = 0; x < pw; x++) {
         const ahead = (x - cur + pw) % pw;
