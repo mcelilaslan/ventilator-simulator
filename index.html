@@ -803,10 +803,11 @@ const SCEN = {
   },
   stack: {
     name: 'Hava hapsi (auto-PEEP)', short: 'Ekspiryum bitmeden yeni soluk',
-    p: { mode: 'VCV', PEEP: 5, Vt: 0.45, Fset: 40, rate: 26, trig: 2, C: 50, R: 17 },
+    p: { mode: 'VCV', PEEP: 5, Vt: 0.45, Fset: 40, rate: 26, Pinsp: 14, Ti: 0.8, trig: 2, C: 50, R: 17 },
+    psvPt: { rr: 26, pmax: 10, ti: 0.8 },
     fix: { rate: 16, Fset: 60 }, fixText: 'f 26→16, akım 40→60 L/dk',
     marks: ['AUTO-PEEP'],
-    look: ['Ekspiratuvar akım sıfıra dönmeden yeni soluk başlar; hacim eğrisi sıfıra dönmez. Hapsolan hacim işaretinde hacimdeki kalın çubuk hapsolan hacmi (mL), akımdaki kalın çubuk hâlâ akan ekspiratuvar akımı gösterir.', 'Ekspiratuvar hold (Eksp. hold) yapın: PEEPtot ayarlanan PEEP\'ten yüksek çıkar, fark auto-PEEP\'tir.', 'Uzun zaman sabiti (τ = R×C) ve kısa ekspiryum süresi hava hapsini artırır: Te en az 3τ olmalıdır (3τ\'da akciğer yaklaşık %95 boşalır). Hasta panelindeki τ kutusu bunu gösterir.', 'VCV\'de hacim sabit olduğu için Ptepe ve Pplato hapsin biriktiği ilk soluklarda adım adım yükselir, yeni dengede yüksek kalır. PCV\'ye geçin: auto-PEEP sürüş basıncını (Pinsp hedefi − PEEPtot) azaltır ve VT düşer.', 'Gerçek ventilatörler hacmi her solukta sıfırlar; kararlı durumda hacim eğrisi auto-PEEP olsa bile sıfıra döner. Simülatör hapsolan hacmi göstermek için hacmi ayarlı PEEP\'teki akciğer hacmine göre çizer. Eksp. hold ölçümü için hasta pasif olmalıdır; efor Palv\'yi düşürür ve sonucu bozar.'],
+    look: ['Ekspiratuvar akım sıfıra dönmeden yeni soluk başlar; hacim eğrisi sıfıra dönmez. Hapsolan hacim işaretinde hacimdeki kalın çubuk hapsolan hacmi (mL), akımdaki kalın çubuk hâlâ akan ekspiratuvar akımı gösterir.', 'Ekspiratuvar hold (Eksp. hold) yapın: PEEPtot ayarlanan PEEP\'ten yüksek çıkar, fark auto-PEEP\'tir.', 'Uzun zaman sabiti (τ = R×C) ve kısa ekspiryum süresi hava hapsini artırır: Te en az 3τ olmalıdır (3τ\'da akciğer yaklaşık %95 boşalır). Hasta panelindeki τ kutusu bunu gösterir.', 'VCV\'de hacim sabit olduğu için Ptepe ve Pplato hapsin biriktiği ilk soluklarda adım adım yükselir, yeni dengede yüksek kalır. PCV\'ye geçin: auto-PEEP sürüş basıncını (Pinsp hedefi − PEEPtot) azaltır ve VT düşer. PSV\'de hasta aynı frekansta kendi solur; hava hapsi sürer ve her efor tetiklemeden önce auto-PEEP\'i yenmek zorundadır.', 'Gerçek ventilatörler hacmi her solukta sıfırlar; kararlı durumda hacim eğrisi auto-PEEP olsa bile sıfıra döner. Simülatör hapsolan hacmi göstermek için hacmi ayarlı PEEP\'teki akciğer hacmine göre çizer. Eksp. hold ölçümü için hasta pasif olmalıdır; efor Palv\'yi düşürür ve sonucu bozar.'],
     mech: "Ekspiryum sonunda alveolde gaz kalırsa (auto-PEEP) hastanın her eforu önce bu basıncı dengelemek zorundadır; bu, gecikmeli tetiklemenin ve etkisiz eforun ana hasta faktörüdür. Ekshalasyon valfinin geç açılması ya da ekspiryuma taşan inflasyon dinamik hiperinflasyonu artırır.",
     causes: ["Yüksek frekans, uzun Ti, yüksek Vt", "Hasta: uzun zaman sabiti (KOAH, bronkospazm)"],
     fixNote: 'Daha düşük frekans ve daha yüksek akım (daha kısa Ti) ekspiryuma zaman bırakır; auto-PEEP yaklaşık 2 → 0.3 cmH₂O, hapsolan hacim yaklaşık 95 → 15 mL iner. Burada τ yaklaşık 0.9 s, 3τ yaklaşık 2.8 s: Te 1.6 s\'den 3.3 s\'ye uzar ve 3τ\'yı karşılar; I:E 1:2.4\'ten 1:7\'ye çıkar. Frekansı düşürmek ekspiryuma en çok zaman kazandıran adımdır. Ptepe akım arttığı için biraz yükselir (dirençsel basınç); Pplato düşer. VE yaklaşık 12 → 7 L/dk azalır: KOAH\'ta bu kabul edilen bir ödünleşimdir (permisif hiperkapni), pH ve PaCO₂ izlenir. Düzeltmeden sonra Eksp. hold ile PEEPtot\'u tekrar ölçün. Hasta efor yapıyorsa ve akım kısıtlılığı varsa (KOAH hazır hastası), ölçülen PEEPtot\'un %75–85\'i kadar eksternal PEEP tetik yükünü azaltır: hasta auto-PEEP\'i yenmek zorunda kalmaz, etkisiz efor ve gecikme kaybolur. Ptepe artmamalıdır; artarsa PEEP geri alınır.',
@@ -911,7 +912,7 @@ const SCEN_EN = {
   },
   stack: {
     name: 'Air trapping (auto-PEEP)', short: 'New breath before expiration ends',
-    look: ['A new breath starts before expiratory flow returns to zero; the volume curve does not return to zero. At the trapped-volume mark the thick bar on volume shows the trapped volume (mL) and the one on flow the expiratory flow still running.', 'Do an expiratory hold (Exp. hold): PEEPtot is higher than set PEEP; the difference is auto-PEEP.', 'A long time constant (τ = R×C) and short expiratory time increase air trapping: Te should be at least 3τ (about 95% emptying at 3τ). The τ box in the patient panel shows this.', 'In VCV the volume is fixed, so Ppeak and Pplat rise step by step over the first breaths while gas accumulates, then stay high at the new steady state. Switch to PCV: auto-PEEP reduces the driving pressure (Pinsp target − PEEPtot) and VT falls.', 'Real ventilators reset volume on every breath; at steady state the volume curve returns to zero even with auto-PEEP. The simulator draws volume relative to lung volume at set PEEP so the trapped volume is visible. An Exp. hold needs a passive patient; effort lowers Palv and spoils the reading.'],
+    look: ['A new breath starts before expiratory flow returns to zero; the volume curve does not return to zero. At the trapped-volume mark the thick bar on volume shows the trapped volume (mL) and the one on flow the expiratory flow still running.', 'Do an expiratory hold (Exp. hold): PEEPtot is higher than set PEEP; the difference is auto-PEEP.', 'A long time constant (τ = R×C) and short expiratory time increase air trapping: Te should be at least 3τ (about 95% emptying at 3τ). The τ box in the patient panel shows this.', 'In VCV the volume is fixed, so Ppeak and Pplat rise step by step over the first breaths while gas accumulates, then stay high at the new steady state. Switch to PCV: auto-PEEP reduces the driving pressure (Pinsp target − PEEPtot) and VT falls. In PSV the patient breathes on their own at the same rate; trapping persists and every effort must first overcome auto-PEEP before it can trigger.', 'Real ventilators reset volume on every breath; at steady state the volume curve returns to zero even with auto-PEEP. The simulator draws volume relative to lung volume at set PEEP so the trapped volume is visible. An Exp. hold needs a passive patient; effort lowers Palv and spoils the reading.'],
     mech: "If gas remains in the alveoli at end-expiration (auto-PEEP), every patient effort must first offset this pressure; it is the main patient factor in delayed triggering and ineffective efforts. Late opening of the exhalation valve or inflation spilling into expiration increases dynamic hyperinflation.",
     causes: ["High rate, long Ti, high Vt", "Patient: long time constant (COPD, bronchospasm)"],
     fixText: 'f 26→16, flow 40→60 L/min',
@@ -1329,8 +1330,19 @@ function change(c, v) {
   if (c.scale) v = v / c.scale;
   set(P, c.key, v);
   if (c.key === 'mode') {
-    if (v === 'PSV') P.rate = 0;
-    else if (!P.rate) P.rate = 14;
+    if (v === 'PSV') {
+      if (P.rate) P._rate = P.rate;
+      P.rate = 0;
+      // pasif hasta PSV'de apneik kalmasın: frekansı korunan bir efor ver, kontrollü moda dönünce kaldır
+      if (!P.pt.rr) {
+        const sp = (SCEN[curKey] && SCEN[curKey].psvPt) || { rr: Math.max(10, Math.min(24, P._rate || 14)), pmax: 8, ti: 0.9 };
+        Object.assign(P.pt, sp); P._ptAuto = 1;
+        if (sim) sim.nextEffort = sim.t + 0.3;
+      }
+    } else {
+      if (!P.rate) P.rate = P._rate || 14;
+      if (P._ptAuto) { P.pt.rr = 0; delete P._ptAuto; }
+    }
   }
   if (c.key === 'pt.rr' && v > 0 && sim && sim.nextEffort > sim.t + 60 / v) sim.nextEffort = sim.t + 0.3;
   if (!sim) { startCustom(P, 'Özel ayar'); return; }
