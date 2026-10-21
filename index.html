@@ -473,7 +473,7 @@ function newEffort(S, start, def) {
 function startBreath(S, kind) {
   const t = S.t, p = S.p;
   const prev = S.breaths[S.breaths.length - 1];
-  const b = { start: t, kind, Ppeak: 0, Vti: 0, Vte: 0, end: null, peepi: Math.max(0, (1000 / p.C) * S.V - p.PEEP), plee: plStat(p, S.V) };
+  const b = { start: t, kind, Ppeak: 0, Vti: 0, Vte: 0, end: null, peepi: Math.max(0, (1000 / p.C) * S.V - p.PEEP), plee: plStat(p, S.V), pesee: (1000 / p.C) * (1 - (p.ELr ?? 0.5)) * S.V + (p.Pcw || 0), pesMin: Infinity };
   // tetikleyen efor
   let eff = null;
   for (const e of S.efforts) if (t >= e.start && t <= e.start + e.ti + 0.05) eff = e;
@@ -665,6 +665,7 @@ function step(S, dt) {
   // özofagus basıncı (plevral basınç vekili): göğüs duvarının elastik basıncı + dinlenme basıncı − kas basıncı.
   // Transpulmoner basınç PL = Paw − Pes; statik hâlde (akım 0) EL × V − Pcw olur.
   const pes = E * (1 - (p.ELr ?? 0.5)) * S.V + (p.Pcw || 0) - pmus;
+  if (S.curBreath && S.curBreath.plei == null && pes < S.curBreath.pesMin) S.curBreath.pesMin = pes;
   S.out = { pawp, paw: Paw, flow: Fm * 60, vol: Math.max(0, S.V - p.PEEP / E) * 1000, pmus, palv: Palv, pes, pl: Paw - pes };
   S.t = t + dt;
 }
@@ -679,6 +680,7 @@ const GROUPS = [
   ['Akım verme', ['starve', 'prvc']],
   ['Sonlanma (siklus)', ['double', 'early', 'late']],
   ['Diğer', ['reverse', 'reverse_vc', 'stack']],
+  ['Transpulmoner basınç', ['chestwall', 'psili']],
 ];
 
 const SCEN = {
@@ -812,6 +814,26 @@ const SCEN = {
     causes: ["Yüksek frekans, uzun Ti, yüksek Vt", "Hasta: uzun zaman sabiti (KOAH, bronkospazm)"],
     fixNote: 'Daha düşük frekans ve daha yüksek akım (daha kısa Ti) ekspiryuma zaman bırakır; auto-PEEP yaklaşık 2 → 0.3 cmH₂O, hapsolan hacim yaklaşık 95 → 15 mL iner. Burada τ yaklaşık 0.9 s, 3τ yaklaşık 2.8 s: Te 1.6 s\'den 3.3 s\'ye uzar ve 3τ\'yı karşılar; I:E 1:2.4\'ten 1:7\'ye çıkar. Frekansı düşürmek ekspiryuma en çok zaman kazandıran adımdır. Ptepe akım arttığı için biraz yükselir (dirençsel basınç); Pplato düşer. VE yaklaşık 12 → 7 L/dk azalır: KOAH\'ta bu kabul edilen bir ödünleşimdir (permisif hiperkapni), pH ve PaCO₂ izlenir. Düzeltmeden sonra Eksp. hold ile PEEPtot\'u tekrar ölçün. Hasta efor yapıyorsa ve akım kısıtlılığı varsa (KOAH hazır hastası), ölçülen PEEPtot\'un %75–85\'i kadar eksternal PEEP tetik yükünü azaltır: hasta auto-PEEP\'i yenmek zorunda kalmaz, etkisiz efor ve gecikme kaybolur. Ptepe artmamalıdır; artarsa PEEP geri alınır.',
   },
+  chestwall: {
+    name: 'Sert göğüs duvarı (obezite)', short: 'Yüksek Pplato, düşük PL', tr4: 'pl',
+    p: { mode: 'VCV', PEEP: 12, Vt: 0.40, Fset: 45, pause: 0.3, rate: 18, trig: 2, C: 20, R: 10, ELr: 0.6, Pcw: 12 },
+    fix: { PEEP: 20 }, fixText: 'PEEP 12→20 (PL ee ≈ 0)',
+    marks: [],
+    look: ['Pplato yaklaşık 32 cmH₂O, yüksek görünür. PL izine bakın: PL ei yaklaşık 7 cmH₂O, akciğer aşırı gerilmiyor.', 'Pes ekspiryum sonunda yaklaşık 17 cmH₂O: sert ve ağır göğüs duvarı plevral basıncı yükseltir. Alt izi Pes\'e alıp bakabilirsiniz.', 'PL ee yaklaşık −5 cmH₂O: ekspiryum sonunda plevral basınç PEEP\'ten yüksek, bağımlı bölgelerde alveoller kapanmaya eğilimli.', 'Paw\'ın bir kısmı göğüs duvarını germeye harcanır: Pplato − PEEP 20 cmH₂O, bunun yalnızca 12\'si akciğere düşer (EL/Ers 0.6).'],
+    mech: "Solunum sistemi elastansı akciğer ve göğüs duvarı elastanslarının toplamıdır (Ers = EL + Ecw). Obezite, karın içi basınç artışı, asit, yaygın ödem ya da göğüs duvarı yanığında göğüs duvarı sertleşir ve plevral basınç yükselir. Ventilatördeki Paw ikisini birlikte gösterir; akciğeri geren basınç PL = Paw − Pes'tir. Bu hastada yüksek Pplato aşırı gerilme anlamına gelmez. Asıl sorun ekspiryum sonunda Pes'in PEEP'i aşması ve alveollerin kapanmasıdır.",
+    causes: ["Morbid obezite", "Karın içi hipertansiyon, abdominal kompartman sendromu, asit", "Yaygın ödem, göğüs duvarı yanığı"],
+    fixNote: 'PEEP 12 → 20 cmH₂O: PL ee yaklaşık −5 → 0 olur, alveoller ekspiryum sonunda açık kalır. Pplato 32 → 40 cmH₂O çıkar ama PL ei yalnızca 7 → 12 cmH₂O olur ve 20\'nin altında kalır; Pes ekspiryum sonunda yaklaşık 20 cmH₂O\'dur. Pplato\'ya bakıp Vt ya da PEEP\'i düşürmek burada yanlış olur: PL ee daha da negatifleşir. Modelde kompliyans sabittir; gerçek hastada açılan alveollerle kompliyans artabilir. Yüksek PEEP\'te hemodinamiyi izleyin. Pes rehberli PEEP büyük bir randomize çalışmada (EPVent-2) yüksek PEEP/FiO₂ tablosundan üstün çıkmadı; yöntem en çok göğüs duvarı bozuk hastada yol gösterir.',
+  },
+  psili: {
+    name: 'P-SILI: güçlü efor', short: 'Masum Paw, yüksek PL', tr4: 'pl',
+    p: { mode: 'PSV', PEEP: 8, PS: 10, rise: 0.15, ETS: 35, trig: 2, C: 30, R: 10, ELr: 0.8, Pcw: 5, pt: { rr: 26, pmax: 22, ti: 0.9, jitter: 0.04 } },
+    fix: { pt: { rr: 20, pmax: 7, ti: 0.9, jitter: 0.06 } }, fixText: 'Sürücü ↓: efor 22→7, f 26→20',
+    marks: [],
+    look: ['Paw masum görünür: PS 10, Ptepe yaklaşık 19 cmH₂O. Ama hasta güçlü çekiyor: Vt yaklaşık 720 mL.', 'Pes her eforda yaklaşık +7\'den −10 cmH₂O\'ya iner. Alt izi Pes\'e alın: ΔPes yaklaşık 16 cmH₂O okunur.', 'PL izi Paw\'dan çok daha büyük salınır. Statik PL ei yaklaşık 21 cmH₂O, hedefin üstünde; akciğeri geren basıncın büyük kısmını ventilatör değil hastanın kası üretir. Akım sırasındaki dinamik PL (yaklaşık 30) hava yolu direnç basıncını da içerir; akciğer stresi için statik PL ei daha doğrudur.', 'PS\'yi düşürmek tek başına yetmez: PS 5\'te Vt yaklaşık 610 mL, PL ei yaklaşık 18 cmH₂O kalır ve Pes daha da düşer. Sürücü yüksek kaldıkça hasta çekmeye devam eder.'],
+    mech: "Güçlü inspiratuvar efor plevral basıncı belirgin negatifleştirir. Ventilatör desteği ile kas basıncı toplanır; Paw düşük görünse de transpulmoner basınç ve Vt yüksektir. Bu, hastanın kendi kendine akciğer hasarı yapmasına (P-SILI) yol açabilir. Hasarlı akciğerde negatif plevral basınç bölgesel aşırı gerilmeye de katkıda bulunabilir; tek kompartmanlı model bunu göstermez.",
+    causes: ["Yüksek solunum sürücüsü: hipoksemi, asidoz, ateş, ağrı, ajitasyon", "Erken ARDS'de spontan mod", "Yetersiz sedasyon ya da analjezi"],
+    fixNote: 'Solunum sürücüsünü azaltın: ateş, ağrı, asidoz ve hipoksemiyi düzeltin, sedasyon ve analjeziyi ayarlayın. Burada efor 22 → 7 cmH₂O, frekans 26 → 20/dk iner: Vt yaklaşık 720 → 420 mL, PL ei yaklaşık 21 → 13 cmH₂O, Pes en düşük değeri yaklaşık −10 → +2 cmH₂O olur. Sürücü azaltılamıyorsa kısa süre kontrollü moda geçmek, gerekirse nöromüsküler blok düşünülür. PS\'yi yalnızca düşürmek Pes salınımını ve solunum işini artırır.',
+  },
 };
 
 
@@ -918,6 +940,22 @@ const SCEN_EN = {
     fixText: 'f 26→16, flow 40→60 L/min',
     fixNote: 'A lower rate and higher flow (shorter Ti) leave time for expiration; auto-PEEP falls from about 2 to 0.3 cmH₂O and trapped volume from about 95 to 15 mL. Here τ is about 0.9 s and 3τ about 2.8 s: Te lengthens from 1.6 to 3.3 s and meets 3τ; I:E goes from 1:2.4 to 1:7. Lowering the rate gains the most expiratory time. Ppeak rises a little because flow is higher (resistive pressure); Pplat falls. VE falls from about 12 to 7 L/min: in COPD this is an accepted trade-off (permissive hypercapnia); follow pH and PaCO₂. Re-measure PEEPtot with Exp. hold after the change. If the patient is making efforts and has flow limitation (COPD preset), external PEEP at 75–85% of measured PEEPtot lowers the trigger load: the patient no longer has to overcome auto-PEEP, and ineffective efforts and delays disappear. Ppeak should not rise; if it does, take the PEEP back.',
   },
+  chestwall: {
+    name: 'Stiff chest wall (obesity)', short: 'High Pplat, low PL',
+    look: ['Pplat is about 32 cmH₂O and looks high. Look at the PL trace: PL ei is about 7 cmH₂O; the lung is not overdistended.', 'Pes at end-expiration is about 17 cmH₂O: a stiff, heavy chest wall raises pleural pressure. Switch the bottom trace to Pes to see it.', 'PL ee is about −5 cmH₂O: at end-expiration pleural pressure exceeds PEEP and dependent alveoli tend to close.', 'Part of Paw is spent stretching the chest wall: Pplat − PEEP is 20 cmH₂O and only 12 of it reaches the lung (EL/Ers 0.6).'],
+    mech: "Respiratory system elastance is the sum of lung and chest wall elastance (Ers = EL + Ecw). In obesity, raised intra-abdominal pressure, ascites, generalised oedema or chest wall burns the chest wall stiffens and pleural pressure rises. Paw on the ventilator reflects both; the pressure that stretches the lung is PL = Paw − Pes. In this patient a high Pplat does not mean overdistension. The real problem is Pes exceeding PEEP at end-expiration, so alveoli close.",
+    causes: ["Morbid obesity", "Intra-abdominal hypertension, abdominal compartment syndrome, ascites", "Generalised oedema, chest wall burns"],
+    fixText: 'PEEP 12→20 (PL ee ≈ 0)',
+    fixNote: 'PEEP 12 → 20 cmH₂O: PL ee goes from about −5 to 0 and alveoli stay open at end-expiration. Pplat rises from 32 to 40 cmH₂O, but PL ei only from 7 to 12 cmH₂O and stays below 20; Pes at end-expiration is about 20 cmH₂O. Lowering Vt or PEEP because of Pplat would be wrong here: PL ee would become even more negative. Compliance is fixed in the model; in a real patient it may improve as alveoli open. Watch haemodynamics at high PEEP. Pes-guided PEEP was not superior to a high PEEP/FiO₂ table in a large randomised trial (EPVent-2); the method is most informative when the chest wall is abnormal.',
+  },
+  psili: {
+    name: 'P-SILI: strong effort', short: 'Innocent Paw, high PL',
+    look: ['Paw looks innocent: PS 10, Ppeak about 19 cmH₂O. But the patient pulls hard: Vt is about 720 mL.', 'With each effort Pes falls from about +7 to −10 cmH₂O. Switch the bottom trace to Pes: ΔPes reads about 16 cmH₂O.', 'The PL trace swings far more than Paw. Static PL ei is about 21 cmH₂O, above target; most of the pressure stretching the lung comes from the patient\'s muscles, not the ventilator. Dynamic PL during flow (about 30) also includes airway resistive pressure; static PL ei is the better measure of lung stress.', 'Lowering PS alone is not enough: at PS 5 Vt is still about 610 mL, PL ei about 18 cmH₂O, and Pes falls further. As long as drive stays high the patient keeps pulling.'],
+    mech: "A strong inspiratory effort makes pleural pressure markedly negative. Ventilator support and muscle pressure add up; Paw looks low but transpulmonary pressure and Vt are high. This can lead to patient self-inflicted lung injury (P-SILI). In an injured lung negative pleural pressure can also add regional overdistension; the single-compartment model does not show this.",
+    causes: ["High respiratory drive: hypoxaemia, acidosis, fever, pain, agitation", "Spontaneous mode in early ARDS", "Inadequate sedation or analgesia"],
+    fixText: 'Drive ↓: effort 22→7, f 26→20',
+    fixNote: 'Reduce respiratory drive: treat fever, pain, acidosis and hypoxaemia, and adjust sedation and analgesia. Here effort falls from 22 to 7 cmH₂O and rate from 26 to 20/min: Vt about 720 → 420 mL, PL ei about 21 → 13 cmH₂O, lowest Pes about −10 → +2 cmH₂O. If drive cannot be reduced, consider a short period in a controlled mode and, if needed, neuromuscular blockade. Lowering PS alone increases the Pes swing and the work of breathing.',
+  },
 };
 
 // ---- Dil (Türkçe / İngilizce) ----
@@ -940,7 +978,7 @@ const EN = {
   'Seçili ayarı çevirerek değiştirin': 'Turn to change the selected setting', 'Azalt': 'Decrease', 'Artır': 'Increase',
   'Ayar seçilmedi': 'No setting selected', 'Hold manevrası': 'Hold maneuver', 'Özel ayar': 'Custom settings', 'Kayıtlı': 'Saved', 'Ayar': 'Preset',
   // gruplar
-  'Normal': 'Normal', 'Tetikleme': 'Triggering', 'Akım verme': 'Flow delivery', 'Sonlanma (siklus)': 'Cycling', 'Diğer': 'Other',
+  'Normal': 'Normal', 'Tetikleme': 'Triggering', 'Akım verme': 'Flow delivery', 'Sonlanma (siklus)': 'Cycling', 'Diğer': 'Other', 'Transpulmoner basınç': 'Transpulmonary pressure',
   // modlar
   'Volüm kontrol (A/C)': 'Volume control (A/C)', 'Basınç kontrol (A/C)': 'Pressure control (A/C)',
   'Basınç ayarlı volüm kontrol': 'Pressure-regulated volume control', 'Basınç destek': 'Pressure support', 'Spontan': 'Spontaneous',
@@ -1147,6 +1185,7 @@ function select(k) {
   curKey = k; curName = SCEN[k].name; fixed = false;
   P = scenParams(); base = clone(P);
   restart(); refreshAll();
+  if (SCEN[k].tr4) setTrace4(SCEN[k].tr4);
 }
 function startCustom(p, name, key) {
   curKey = key || 'custom'; curName = name || 'Özel ayar'; fixed = false;
@@ -1268,7 +1307,7 @@ const PAT = [
   { key: 'Pcrit', label: 'Akım kısıtlılığı', min: 0, max: 15, step: 1, unit: 'cmH₂O', fmt: v => v ? L('Pcrit ', 'Pcrit ') + v + ' cmH₂O' : T('yok') },
   { tau: 1 },
   { key: 'ELr', label: 'EL/Ers', min: 0.2, max: 0.9, step: 0.05, unit: '', show: () => trace4 !== 'pmus' },
-  { key: 'Pcw', label: 'Göğüs duvarı basıncı', min: 0, max: 15, step: 1, unit: 'cmH₂O', show: () => trace4 !== 'pmus' },
+  { key: 'Pcw', label: 'Göğüs duvarı basıncı', min: 0, max: 20, step: 1, unit: 'cmH₂O', show: () => trace4 !== 'pmus' },
   { hint: p => (p.Rexp > 1 ? L(`Eksp. direnç ×${p.Rexp}`, `Exp. resistance ×${p.Rexp}`) : '') + (p.Pcrit > p.PEEP ? (p.Rexp > 1 ? ' · ' : '') + L(`eksternal PEEP Pcrit'in ${p.Pcrit - p.PEEP} altında`, `external PEEP ${p.Pcrit - p.PEEP} below Pcrit`) : '') },
   { sep: 1 },
   { key: 'pt.rr', label: 'Efor sıklığı', min: 0, max: 40, step: 1, unit: '/dk', fmt: v => v ? v + ' ' + T('/dk') : T('yok') },
@@ -1433,6 +1472,8 @@ const STIPS = {
     reverse: ["Sedasyonu azaltın, spontan moda geçin.", "Ti ya da frekans değişikliği entrainment oranını değiştirebilir, ama çoğu zaman yetmez.", "Çift tetik ve hacim yığılmasını izleyin (Vt, Pplato).", "Ağır ARDS'de farmakolojik baskılama gerekebilir."],
     reverse_vc: ["Sedasyonu azaltın, spontan moda geçin.", "VCV'de çift tetik Vt'yi ikiye katlar; basınç moduna geçmek artışı sınırlar.", "Yığılan Vt ve Pplato'yu izleyin.", "Ağır ARDS'de farmakolojik baskılama gerekebilir."],
     stack: ["Ekspiryum süresini uzatın: frekansı düşürün, Vt'yi azaltın, akımı artırıp Ti'yi kısaltın.", "Eksp. hold ile auto-PEEP'i ölçün ve değişiklikten sonra tekrar ölçün.", "Bronkodilatör ve sekresyon temizliği.", "Efor yapan, akım kısıtlılığı olan hastada eksternal PEEP'i PEEPtot'un %75–85'ine çıkarın; Ptepe yükselirse geri alın.", "Hipotansiyon gelişirse dinamik hiperinflasyonu düşünün; ağırsa kısa süre devreyi ayırıp ekshalasyona izin verin."],
+    chestwall: ["Pplato'yu tek başına değil Pes ile birlikte yorumlayın: PL ei = Pplato − Pes (inspiratuvar hold sırasında).", "PEEP'i PL ee yaklaşık 0 olacak şekilde Pes'e göre titre edin.", "Balon yerleşimini oklüzyon testiyle doğrulayın: ΔPes/ΔPaw 0.8–1.2.", "Yüksek PEEP'te kan basıncını ve kalp debisini izleyin."],
+    psili: ["Pes salınımını (ΔPes) efor göstergesi olarak izleyin.", "Statik PL ei için kısa inspiratuvar hold yapın; aktif hastada efor hold sonucunu bozabilir.", "PS'yi düşürmek yerine sürücüyü azaltın: hipoksemi, asidoz, ateş, ağrı.", "Sürücü kontrol edilemiyorsa kısa süre kontrollü moda ve derin sedasyona geçmeyi düşünün."],
   },
   en: {
     normal_psv: ["Titrate PS to respiratory rate, Vt and accessory muscle use.", "Trigger: the most sensitive value that does not auto-trigger.", "Default ETS is 25% of peak flow; raise it in COPD, lower it in ARDS.", "Rise: fast with high drive, slow with low drive."],
@@ -1448,6 +1489,8 @@ const STIPS = {
     reverse: ["Lighten sedation, switch to a spontaneous mode.", "Changing Ti or rate may change the entrainment ratio, but often is not enough.", "Watch for double triggering and volume stacking (Vt, Pplat).", "Severe ARDS may need pharmacologic suppression."],
     reverse_vc: ["Lighten sedation, switch to a spontaneous mode.", "In VCV a double trigger doubles Vt; a pressure mode limits the increase.", "Watch the stacked Vt and Pplat.", "Severe ARDS may need pharmacologic suppression."],
     stack: ["Lengthen expiratory time: lower the rate, reduce Vt, raise flow to shorten Ti.", "Measure auto-PEEP with an expiratory hold and again after each change.", "Bronchodilators and secretion clearance.", "In a patient making efforts with flow limitation, raise external PEEP to 75–85% of PEEPtot; step back if Ppeak rises.", "If hypotension develops, think of dynamic hyperinflation; if severe, briefly disconnect to let the patient exhale."],
+    chestwall: ["Interpret Pplat together with Pes, not alone: PL ei = Pplat − Pes (during an inspiratory hold).", "Titrate PEEP to Pes so that PL ee is about 0.", "Check balloon position with an occlusion test: ΔPes/ΔPaw 0.8–1.2.", "Watch blood pressure and cardiac output at high PEEP."],
+    psili: ["Use the Pes swing (ΔPes) as an index of effort.", "Use a short inspiratory hold for static PL ei; in an active patient effort can distort the hold.", "Reduce drive rather than PS: hypoxaemia, acidosis, fever, pain.", "If drive cannot be controlled, consider a short period in a controlled mode with deeper sedation."],
   },
 };
 const GEN_TR = `<li>En zararlı asenkroniler: çift tetik, ters tetik ve akım uyumsuzluğu.</li><li>Tetik: oto-tetikleme yapmayan en duyarlı değer. Akım ve basınç tetiği arasındaki fark küçüktür.</li><li>Frekans hastanın kendi frekansının altında. VT, Pplato ≤ 30 ise 8 mL/kg'a kadar.</li><li>Auto-PEEP en aza indirilir; akım kısıtlılığında eksternal PEEP eklenir.</li><li>Yüksek inspiratuvar akım nöral Ti'yi kısaltır ve frekansı artırır.</li><li>Rampa: yüksek dürtüde hızlı, düşük dürtüde yavaş.</li><li>Sinkroni konfor demek değildir: dispne sıktır ve yalnızca bir kısmı ayarla düzelir. Ağrıyı arayın; sedatif asenkroniyi çoğu zaman azaltmaz.</li><li>Yedek frekanssız PSV uykuda periyodik solunuma ve uyku bölünmesine yol açabilir.</li>`;
@@ -1609,7 +1652,8 @@ function draw() {
       const lb = sim.breaths.filter(b => b.plei != null).pop();
       if (lb) {
         const ok = lb.plee >= -2 && lb.plee <= 2 && lb.plei < 20;
-        const txt = `PL ee ${lb.plee.toFixed(1)} · PL ei ${lb.plei.toFixed(1)} · ${LANG === 'en' ? 'target: ee −2…+2, ei < 20' : 'hedef: ee −2…+2, ei < 20'}`;
+        const pesTxt = ch.k === 'pes' ? `Pes ee ${lb.pesee.toFixed(1)} · ΔPes ${Math.max(0, lb.pesee - lb.pesMin).toFixed(1)} · ` : '';
+        const txt = pesTxt + `PL ee ${lb.plee.toFixed(1)} · PL ei ${lb.plei.toFixed(1)} · ${LANG === 'en' ? 'target: ee −2…+2, ei < 20' : 'hedef: ee −2…+2, ei < 20'}`;
         ctx.font = '600 11px system-ui,sans-serif'; ctx.textAlign = 'right';
         ctx.fillStyle = ok ? COL['--tick'] : COL['--warn'];
         ctx.fillText(txt, W - RIGHT - 6, ln.y0 + 12);

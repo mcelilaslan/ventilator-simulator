@@ -8,7 +8,7 @@ Hasta-ventilatör asenkronisini öğretmek için canlı akan bir mekanik ventila
 
 ## Features / Özellikler
 - Modes: VCV, PCV, PRVC, PSV
-- 13 scenarios: normal breathing, ineffective effort, delayed and auto-triggering, flow starvation, falling support in PRVC, double triggering, early and delayed cycling, reverse triggering, air trapping (auto-PEEP)
+- 15 scenarios: normal breathing, ineffective effort, delayed and auto-triggering, flow starvation, falling support in PRVC, double triggering, early and delayed cycling, reverse triggering, air trapping (auto-PEEP), stiff chest wall and strong effort (P-SILI) with oesophageal and transpulmonary pressure
 - Adjustable patient: compliance, resistance, expiratory flow limitation, effort rate and strength, neural Ti, expiratory muscles, entrainment, cardiac oscillation; COPD and ARDS presets
 - Inspiratory and expiratory hold maneuvers, event marks, saved presets, day and night themes
 - Turkish and English; the language follows the browser and can be switched with the TR/EN button
