@@ -597,6 +597,9 @@ function step(S, dt) {
   }
   if (S.phase === 'exp') {
     const Rv = 1.5;
+    // Y-parçasında ölçülen basınç: PEEP valfi ve ekspiratuvar kol akıma göre basınç düşürür.
+    // Rvy yalnızca bu ölçümü etkiler; etkisiz eforda akım azalınca basınçtaki çentik belirginleşir.
+    const Rvy = p.Rvy || Rv;
     if (p.PEEP >= Palv) {
       // hasta gaz çekiyor: basınç tetiğinde talep valfi kapalıdır, hava yolu basıncı düşer
       const Rin = p.trigType === 'pressure' ? 10 : Rv;
@@ -607,7 +610,7 @@ function step(S, dt) {
       // max(PEEP, Pcrit) sürer. Bu yüzden Pcrit altındaki eksternal PEEP ekspiratuvar akımı değiştirmez.
       const D = Math.max(p.PEEP, p.Pcrit || 0);
       F = Palv > D ? (D - Palv) / (p.R * (p.Rexp || 1) + Rv) : 0;
-      Paw = p.PEEP - Rv * F;
+      Paw = p.PEEP - Rvy * F;
     }
   }
   const Fm = F + cardiac;
@@ -683,13 +686,13 @@ const SCEN = {
   },
   iie: {
     name: 'Etkisiz inspiratuvar efor', short: 'En sık asenkroni',
-    p: { mode: 'PSV', PEEP: 5, PS: 18, rise: 0.15, ETS: 15, trig: 3, C: 55, R: 15, maxTi: 2.5, pt: { rr: 24, pmax: 6, ti: 0.7, jitter: 0.1 } },
-    fix: { PS: 12, ETS: 40, trig: 2 }, fixText: 'PS 18→12, ETS %15→40, tetik 3→2 L/dk',
+    p: { mode: 'PSV', PEEP: 5, PS: 18, rise: 0.15, ETS: 12, trig: 3, C: 55, R: 15, Rvy: 5, maxTi: 2.5, pt: { rr: 24, pmax: 6, ti: 0.7, jitter: 0.15 } },
+    fix: { PS: 12, ETS: 40, trig: 2 }, fixText: 'PS 18→12, ETS %12→40, tetik 3→2 L/dk',
     marks: ['ETKİSİZ EFOR'],
-    look: ['Ekspiryum sırasında akım eğrisinde ani azalma veya çentik, ardından soluk gelmez.', 'Basınç eğrisi neredeyse değişmez.', 'Ekspiryum sonu akım sıfıra inmeden yeni soluk başlar (auto-PEEP).', 'Ventilatörün gösterdiği frekans hastanın gerçek efor sayısından düşüktür.'],
-    mech: "Efor alveol basıncını düşürür; ekspirasyonu süren basınç farkı azalır ve ekspiratuvar akım yavaşlar. Hava yolundaki gaz miktarı değişmediği için basınç eğrisi neredeyse değişmez. Efor auto-PEEP + tetik eşiğini aşamaz. Arka arkaya iki ekspiryum auto-PEEP'i kendiliğinden sınırlar. Etkisiz efor, eforun büyüklüğüyle değil destek düzeyiyle ilişkilidir: A/C ya da yüksek PS'de eforların 1/4–1/3'ü tetikleyemeyebilir.",
+    look: ['Ekspiryum sırasında akım eğrisinde ani azalma veya çentik, ardından soluk gelmez.', 'Basınç eğrisinde küçük bir negatif defleksiyon (çentik) olur: ekspiratuvar akım azalınca PEEP valfi ve ekspiratuvar koldaki basınç düşümü azalır. Basınç PEEP\'in altına inmez, çünkü ventilatör tetiklenmez.', 'Ekspiryum sonu akım sıfıra inmeden yeni soluk başlar (auto-PEEP).', 'Ventilatörün gösterdiği frekans hastanın gerçek efor sayısından düşüktür.'],
+    mech: "Efor alveol basıncını düşürür; ekspirasyonu süren basınç farkı azalır ve ekspiratuvar akım yavaşlar. Hava yolundaki gaz miktarı değişmediği için basınç eğrisinde yalnızca küçük bir çentik görülür; çoğu zaman akım eğrisinden daha zor seçilir. Efor auto-PEEP + tetik eşiğini aşamaz. Arka arkaya iki ekspiryum auto-PEEP'i kendiliğinden sınırlar. Etkisiz efor, eforun büyüklüğüyle değil destek düzeyiyle ilişkilidir: A/C ya da yüksek PS'de eforların 1/4–1/3'ü tetikleyemeyebilir.",
     causes: ["Ventilatör: yüksek destek (PS, Vt), uzun Ti ya da yüksek set frekans nedeniyle kısa ekspiryum süresi, yüksek tetik eşiği", "Hasta mekaniği: yüksek direnç, düşük elastans (yüksek kompliyans), auto-PEEP", "Düşük solunum dürtüsü, sedasyon"],
-    fixNote: "Daha kısa ve daha küçük soluk ekspiryuma zaman bırakır; eforların hepsi tetikler. Kalan gecikme bu hastadaki auto-PEEP'ten gelir: auto-PEEP'in altında kalan eksternal PEEP, tetik için gereken eforu da azaltır (Auto-PEEP ve eksternal PEEP senaryosu). Auto-PEEP varken tetiği daha duyarlı yapmak tek başına yetmez. PS düşünce VT küçülür (yaklaşık 700 → 400 mL) ama boşa giden eforlar artık soluk aldığı için frekans artar (yaklaşık 16 → 24/dk); VE biraz azalır (yaklaşık 11.5 → 9.5 L/dk), çünkü önceki aşırı destek hastayı hiperventile ediyordu. PS'yi bir anda çok düşürmeyin: VT yaklaşık 6 mL/kg'ın altına inerse, frekans ve efor belirgin artarsa PS'yi 1–2 cmH₂O geri artırın.",
+    fixNote: "Daha kısa ve daha küçük soluk ekspiryuma zaman bırakır; eforların hepsi tetikler. Kalan gecikme bu hastadaki auto-PEEP'ten gelir: auto-PEEP'in altında kalan eksternal PEEP, tetik için gereken eforu da azaltır (Auto-PEEP ve eksternal PEEP senaryosu). Auto-PEEP varken tetiği daha duyarlı yapmak tek başına yetmez. PS düşünce VT küçülür (yaklaşık 750 → 400 mL) ama boşa giden eforlar artık soluk aldığı için frekans artar (yaklaşık 14 → 24/dk); VE biraz azalır (yaklaşık 11 → 9.5 L/dk), çünkü önceki aşırı destek hastayı hiperventile ediyordu. PS'yi bir anda çok düşürmeyin: VT yaklaşık 6 mL/kg'ın altına inerse, frekans ve efor belirgin artarsa PS'yi 1–2 cmH₂O geri artırın.",
   },
   delay: {
     name: 'Gecikmeli tetikleme', short: 'Efor ile destek arası uzun',
@@ -818,11 +821,11 @@ const SCEN_EN = {
   },
   iie: {
     name: 'Ineffective inspiratory effort', short: 'The most common asynchrony',
-    look: ['During expiration, a sudden decrease or notch in flow, not followed by a breath.', 'The pressure curve barely changes.', 'A new breath starts before expiratory flow reaches zero (auto-PEEP).', 'The rate shown by the ventilator is lower than the patient\'s true effort rate.'],
-    mech: "The effort lowers alveolar pressure; the pressure gradient driving expiration falls and expiratory flow slows. The amount of gas in the airway does not change, so the pressure curve barely changes. The effort cannot overcome auto-PEEP plus the trigger threshold. Two consecutive expirations limit auto-PEEP by themselves. Ineffective efforts relate to the level of support, not to effort size: in A/C or high PS, 1/4–1/3 of efforts may fail to trigger.",
+    look: ['During expiration, a sudden decrease or notch in flow, not followed by a breath.', 'A small negative deflection (notch) appears on the pressure curve: as expiratory flow falls, the pressure drop across the PEEP valve and expiratory limb falls. Pressure does not go below PEEP because the ventilator is not triggered.', 'A new breath starts before expiratory flow reaches zero (auto-PEEP).', 'The rate shown by the ventilator is lower than the patient\'s true effort rate.'],
+    mech: "The effort lowers alveolar pressure; the pressure gradient driving expiration falls and expiratory flow slows. The amount of gas in the airway does not change, so the pressure curve shows only a small notch; it is often harder to see than on the flow curve. The effort cannot overcome auto-PEEP plus the trigger threshold. Two consecutive expirations limit auto-PEEP by themselves. Ineffective efforts relate to the level of support, not to effort size: in A/C or high PS, 1/4–1/3 of efforts may fail to trigger.",
     causes: ["Ventilator: high support (PS, Vt), short expiratory time from long Ti or high set rate, high trigger threshold", "Patient mechanics: high resistance, low elastance (high compliance), auto-PEEP", "Low respiratory drive, sedation"],
-    fixText: 'PS 18→12, ETS 15→40%, trigger 3→2 L/min',
-    fixNote: "Shorter, smaller breaths leave time for expiration; every effort triggers. The remaining delay comes from this patient's auto-PEEP: external PEEP set below auto-PEEP also lowers the effort needed to trigger (see the Auto-PEEP and external PEEP scenario). With auto-PEEP, making the trigger more sensitive is not enough on its own. When PS falls, VT gets smaller (about 700 → 400 mL) but the wasted efforts now get a breath, so the rate rises (about 16 → 24/min); VE falls a little (about 11.5 → 9.5 L/min) because the earlier over-assistance was hyperventilating the patient. Do not drop PS too far at once: if VT falls below about 6 mL/kg and rate and effort rise clearly, add back 1–2 cmH₂O of PS.",
+    fixText: 'PS 18→12, ETS 12→40%, trigger 3→2 L/min',
+    fixNote: "Shorter, smaller breaths leave time for expiration; every effort triggers. The remaining delay comes from this patient's auto-PEEP: external PEEP set below auto-PEEP also lowers the effort needed to trigger (see the Auto-PEEP and external PEEP scenario). With auto-PEEP, making the trigger more sensitive is not enough on its own. When PS falls, VT gets smaller (about 750 → 400 mL) but the wasted efforts now get a breath, so the rate rises (about 14 → 24/min); VE falls a little (about 11 → 9.5 L/min) because the earlier over-assistance was hyperventilating the patient. Do not drop PS too far at once: if VT falls below about 6 mL/kg and rate and effort rise clearly, add back 1–2 cmH₂O of PS.",
   },
   delay: {
     name: 'Delayed triggering', short: 'Long gap between effort and support',
