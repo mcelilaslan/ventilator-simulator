@@ -480,7 +480,7 @@ function startBreath(S, kind) {
       if ((eff.triggered || eff.reverse) && prev) {
         S.events.push({ t, type: 'ÇİFT', ch: 'flow' });
         b.kind = 'double';
-      } else if (delay > 0.3) {
+      } else if (delay > 0.35) {
         S.events.push({ t: eff.start, t2: t, type: 'GECİKME', ch: 'flow' });
       }
       eff.triggered = true;
@@ -500,7 +500,8 @@ function startBreath(S, kind) {
 
 // ekspiryum, akım sıfıra inmeden yeni bir soluk ya da hasta eforuyla kesiliyorsa işaretle (ekspiryum başına bir kez)
 function expUnfinished(S) {
-  if (S.phase !== 'exp' || S.expFlag || S.closeFlag || !(S.out.flow < -3)) return;
+  // anlamlı hava hapsi: akım hâlâ sürüyor ve alveolde en az 2.5 cmH₂O auto-PEEP var
+  if (S.phase !== 'exp' || S.expFlag || S.closeFlag || !(S.out.flow < -3) || (1000 / S.p.C) * S.V - S.p.PEEP < 2.5) return;
   S.expFlag = true;
   S.events.push({ t: S.t, type: 'AKIM SIFIRA İNMEDİ', ch: 'flow', v: Math.round(S.out.flow) });
 }
@@ -613,7 +614,7 @@ function step(S, dt) {
       const D = Math.max(p.PEEP, p.Pcrit || 0);
       F = Palv > D ? (D - Palv) / (p.R * (p.Rexp || 1) + Rv) : 0;
       // hava yolu kapandı: akım sıfır ama gaz alveolde hapsoldu (akım eğrisinden görünmeyen auto-PEEP)
-      if (!S.closeFlag && !S.expFlag && -F * 60 < 3 && pmus < 0.05 && t - S.phaseStart > 0.3 && E * S.V - p.PEEP >= 1.5) {
+      if (!S.closeFlag && !S.expFlag && -F * 60 < 3 && pmus < 0.05 && t - S.phaseStart > 0.3 && E * S.V - p.PEEP >= 3) {
         S.closeFlag = true;
         S.events.push({ t, type: 'GAZ HAPSİ', ch: 'flow', ap: Math.round(E * S.V - p.PEEP) });
       }
@@ -1715,7 +1716,7 @@ function updNums() {
   } else { $('nPpl').textContent = '--'; $('nDP').textContent = '--'; $('nCst').textContent = '--'; }
   const pi = sim.curBreath ? sim.curBreath.peepi : 0;
   $('nPeep').textContent = P.PEEP + ' / ' + pi.toFixed(1);
-  $('nPeep').parentElement.classList.toggle('alert', pi >= 1.5); $('nPeep').parentElement.classList.toggle('hot', pi >= 3);
+  $('nPeep').parentElement.classList.toggle('alert', pi >= 2); $('nPeep').parentElement.classList.toggle('hot', pi >= 3);
   // tetik için gereken kas basıncı ≈ PEEPi + tetik eşiği (akım tetiğinde eşik akımı × direnç)
   const thr = P.trigType === 'pressure' ? P.trigP : P.trig / 60 * (P.R + 1.5);
   const te0 = pi + thr;
@@ -1800,7 +1801,7 @@ function updHdr() {
     }
     // hava hapsi her modda görünsün: başka uyarı yoksa auto-PEEP'i başlıkta göster
     const pi = sim.curBreath ? sim.curBreath.peepi : 0;
-    if (!msg && pi >= 2) msg = '⚠ AUTO-PEEP ' + pi.toFixed(0) + ' cmH₂O';
+    if (!msg && pi >= 3) msg = '⚠ AUTO-PEEP ' + pi.toFixed(0) + ' cmH₂O';
   }
   al.textContent = msg; al.classList.toggle('on', !!msg);
 }
