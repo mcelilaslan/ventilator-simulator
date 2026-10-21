@@ -81,6 +81,7 @@ header{align-items:center}
 .side .ctls{gap:8px 10px}
 .side .mini{min-width:120px;flex:1 1 120px}
 .side .mini.w{flex-basis:100%}
+.side .mini.w .seg{flex-wrap:wrap;max-width:100%}
 .side .mini .seg{align-self:flex-start}
 .side .sep{width:100%;height:1px;flex:1 1 100%;margin:0}
 .side .hintI{flex:1 1 100%}
@@ -383,7 +384,8 @@ footer{margin-top:16px;color:var(--muted);font-size:12px}
     <div class="sec fold" id="rowPat"><h4 data-i="rHasta2">Hasta</h4><div class="ctls" id="patRow"></div></div>
     <div class="sec fold" id="rowView"><h4 data-i="rGörünüm2">Görünüm</h4><div class="ctls">
       <div class="seg" id="speed"><button data-s="0.5">0.5×</button><button data-s="1" class="on">1×</button><button data-s="2">2×</button></div>
-      <label class="chk"><input type="checkbox" id="cPmus" checked> <span data-i="cP">Pmus izi</span></label>
+      <label class="chk"><input type="checkbox" id="cPmus" checked> <span data-i="cP">Alt iz</span></label>
+      <div class="seg" id="trace4"><button data-t="pmus" class="on">Pmus</button><button data-t="pes">Pes</button><button data-t="pl">PL</button></div>
       <label class="chk"><input type="checkbox" id="cMarks" checked> <span data-i="cM">Olay işaretleri</span></label>
       <label class="chk"><input type="checkbox" id="cAuto" checked> <span data-i="cA">Otomatik eksen</span></label>
       <div class="mini"><div class="lab"><span data-i="dB">Dalga yüksekliği</span><b id="vSize"></b></div><input type="range" id="rSize" min="200" max="900" step="10"></div>
@@ -409,7 +411,7 @@ footer{margin-top:16px;color:var(--muted);font-size:12px}
     <div class="card" style="grid-column:1/-1" data-i="howto">
       <p class="title">Nasıl kullanılır?</p>
       <p>Üstteki <b>Senaryo</b> düğmesine basıp (kısayol S) bir asenkroni tipi seçin; ekran gerçek bir ventilatör gibi soldan sağa tarar. Ventilatör ayarları ekranın altındaki yuvarlak düğmelerdedir: bir düğmeye tıklayın (sarı halka), sonra sağdaki döner düğmeyi çevirin ya da fare tekerleği, sürükleme veya ok tuşlarıyla değiştirin. Modu turuncu kutudan ya da <b>Ventilasyon modu…</b> tuşundan değiştirin. Hasta mekaniği ve eforu sağdaki <b>Hasta</b> bölümündedir (dar ekranda üstteki <b>Hasta ayarları</b> düğmesinde); klavye kısayolları da orada yazar. Mor iz hastanın kas eforudur (Pmus); gerçek ventilatörde görünmez, öğretim için gösterilir.</p>
-      <div class="legend"><span><i style="background:var(--paw)"></i>Basınç (Paw)</span><span><i style="background:var(--flow)"></i>Akım</span><span><i style="background:var(--vol)"></i>Hacim</span><span><i style="background:var(--pmus)"></i>Hasta eforu (Pmus)</span><span>▲ mor: hasta tetikledi · ▲ gri: zaman tetiklemeli</span><span>Kesikli mor çizgi (VCV): pasif hastada olacak basınç; aradaki gölge hastanın işi</span><span>Boşluk: dondur · F: tam ekran</span></div>
+      <div class="legend"><span><i style="background:var(--paw)"></i>Basınç (Paw)</span><span><i style="background:var(--flow)"></i>Akım</span><span><i style="background:var(--vol)"></i>Hacim</span><span><i style="background:var(--pmus)"></i>Hasta eforu (Pmus)</span><span>▲ mor: hasta tetikledi · ▲ gri: zaman tetiklemeli</span><span>Kesikli mor çizgi (VCV): pasif hastada olacak basınç; aradaki gölge hastanın işi</span><span>Alt iz Pes/PL: özofagus balonuyla ölçülen basınç ve PL = Paw − Pes. PL ee ve PL ei hold'daki statik değerlerdir; hedef PL ee yaklaşık −2 ile +2, PL ei 15–20'nin altı. EL/Ers ve göğüs duvarı basıncı hasta ayarlarındadır.</span><span>Boşluk: dondur · F: tam ekran</span></div>
     </div>
   </section>
 
@@ -418,6 +420,7 @@ footer{margin-top:16px;color:var(--muted);font-size:12px}
     <p style="margin:0 0 2px"><b>Kaynaklar</b></p>
     <ol style="margin:0;padding-left:18px">
       <li>Murias G, Lucangelo U, Blanch L. Patient-ventilator asynchrony. <i>Curr Opin Crit Care</i> 2016;22:53–59.</li>
+      <li>Ball L, Talmor D, Pelosi P. Transpulmonary pressure monitoring in critically ill patients: pearls and pitfalls. <i>Crit Care</i> 2024;28. doi:10.1186/s13054-024-04950-y</li>
       <li>Hamilton Medical. Patient-ventilator asynchrony reference card (ELO2019041N.04), 2023.</li>
       <li>Tonetti T, Merola R, Gregoretti C, Ranieri VM. Patient–ventilator interaction. <i>Textbook of Critical Care</i>, Bölüm 54, s. 393–399.</li>
       <li>Hess DR, Kacmarek RM. Patient-ventilator interaction. <i>Essentials of Mechanical Ventilation</i>, Bölüm 15, s. 153–166.</li>
@@ -470,7 +473,7 @@ function newEffort(S, start, def) {
 function startBreath(S, kind) {
   const t = S.t, p = S.p;
   const prev = S.breaths[S.breaths.length - 1];
-  const b = { start: t, kind, Ppeak: 0, Vti: 0, Vte: 0, end: null, peepi: Math.max(0, (1000 / p.C) * S.V - p.PEEP) };
+  const b = { start: t, kind, Ppeak: 0, Vti: 0, Vte: 0, end: null, peepi: Math.max(0, (1000 / p.C) * S.V - p.PEEP), plee: plStat(p, S.V) };
   // tetikleyen efor
   let eff = null;
   for (const e of S.efforts) if (t >= e.start && t <= e.start + e.ti + 0.05) eff = e;
@@ -513,9 +516,12 @@ function endFlow(S) {
   endInsp(S);
 }
 
+// statik transpulmoner basınç (hold sırasında okunan değer): EL × V − göğüs duvarı dinlenme basıncı
+function plStat(p, V) { return (1000 / p.C) * (p.ELr ?? 0.5) * V - (p.Pcw || 0); }
+
 function endInsp(S) {
   S.phase = 'exp'; S.phaseStart = S.t;
-  const b = S.curBreath; b.Vti = S.Vtid; b.ti = S.t - b.start;
+  const b = S.curBreath; b.Vti = S.Vtid; b.ti = S.t - b.start; b.plei = plStat(S.p, S.V);
   for (const e of S.efforts) if (e.pushAt != null && e.pushEnd == null) e.pushEnd = S.t - e.start;
   S.tiHist.push(b.ti); if (S.tiHist.length > 6) S.tiHist.shift();
   // PRVC: bir sonraki soluğun basıncı, bu soluğun hacmine göre adım adım ayarlanır (adım ≤ 3 cmH2O)
@@ -656,7 +662,10 @@ function step(S, dt) {
   if (S.events.length > 60) S.events.splice(0, S.events.length - 60);
   // pasif hastada aynı akım ve hacimle oluşacak basınç (VCV): aradaki fark hastanın işidir
   const pawp = p.mode === 'VCV' && (S.phase === 'insp' || (S.phase === 'pause' && !S.pauseHold)) ? Paw + pmus : NaN;
-  S.out = { pawp, paw: Paw, flow: Fm * 60, vol: Math.max(0, S.V - p.PEEP / E) * 1000, pmus, palv: Palv };
+  // özofagus basıncı (plevral basınç vekili): göğüs duvarının elastik basıncı + dinlenme basıncı − kas basıncı.
+  // Transpulmoner basınç PL = Paw − Pes; statik hâlde (akım 0) EL × V − Pcw olur.
+  const pes = E * (1 - (p.ELr ?? 0.5)) * S.V + (p.Pcw || 0) - pmus;
+  S.out = { pawp, paw: Paw, flow: Fm * 60, vol: Math.max(0, S.V - p.PEEP / E) * 1000, pmus, palv: Palv, pes, pl: Paw - pes };
   S.t = t + dt;
 }
 
@@ -943,7 +952,9 @@ const EN = {
   'Hazır hasta': 'Preset patient', 'KOAH alevlenme': 'COPD exacerbation', 'ARDS': 'ARDS',
   'Normal akciğer: C 50, R 10': 'Normal lung: C 50, R 10',
   'Yüksek direnç (ekspiryumda daha da yüksek), normal-yüksek kompliyans, uzun τ, ekspiratuvar akım kısıtlılığı: hava hapsine yatkın': 'High resistance (even higher in expiration), normal-high compliance, long τ, expiratory flow limitation: prone to air trapping',
-  'Düşük kompliyans, kısa τ': 'Low compliance (stiff lung), short τ',
+  'Düşük kompliyans, kısa τ, göğüs duvarı sertliği (abdominal basınç): düşük PEEP\'te PL ee negatif': 'Low compliance (stiff lung), short τ, stiff chest wall (abdominal pressure): negative PL ee at low PEEP',
+  'Amfizem': 'Emphysema', 'Çok yüksek kompliyans (elastik geri çekilme kaybı), ekspiryumda yüksek direnç, çok uzun τ, erken hava yolu çökmesi: belirgin hiperinflasyon ve auto-PEEP': 'Very high compliance (loss of elastic recoil), high expiratory resistance, very long τ, early airway collapse: marked hyperinflation and auto-PEEP',
+  'Alt iz': 'Bottom trace', 'Göğüs duvarı basıncı': 'Chest wall pressure',
   'Kompliyans': 'Compliance', 'Direnç': 'Resistance', 'Akım kısıtlılığı': 'Flow limitation', 'yok': 'none',
   'Efor sıklığı': 'Effort rate', 'Efor gücü': 'Effort strength', 'Nöral Ti': 'Neural Ti', 'Eksp. kas': 'Exp. muscles',
   'Entrainment': 'Entrainment', 'Kapalı': 'Off', 'Efor gecikmesi': 'Effort delay', 'Entrainment gücü': 'Entrainment strength',
@@ -957,11 +968,12 @@ const EN = {
 const HTML_EN = {
   howto: `<p class="title">How to use</p>
       <p>Press the <b>Scenario</b> button at the top (shortcut S) and pick an asynchrony type; the screen sweeps left to right like a real ventilator. Ventilator settings are the round knobs at the bottom of the screen: click a knob (yellow ring), then turn the rotary dial on the right, or use the mouse wheel, dragging or the arrow keys. Change the mode from the orange box or the <b>Ventilation mode…</b> key. Patient mechanics and effort are in the <b>Patient</b> section on the right (on narrow screens, the <b>Patient settings</b> button above); keyboard shortcuts are listed there too. The purple trace is the patient's muscle effort (Pmus); a real ventilator does not show it, it is shown for teaching.</p>
-      <div class="legend"><span><i style="background:var(--paw)"></i>Pressure (Paw)</span><span><i style="background:var(--flow)"></i>Flow</span><span><i style="background:var(--vol)"></i>Volume</span><span><i style="background:var(--pmus)"></i>Patient effort (Pmus)</span><span>▲ purple: patient-triggered · ▲ grey: time-triggered</span><span>Dashed purple line (VCV): pressure of a passive patient; the shaded gap is the patient's work</span><span>Space: freeze · F: full screen</span></div>`,
+      <div class="legend"><span><i style="background:var(--paw)"></i>Pressure (Paw)</span><span><i style="background:var(--flow)"></i>Flow</span><span><i style="background:var(--vol)"></i>Volume</span><span><i style="background:var(--pmus)"></i>Patient effort (Pmus)</span><span>▲ purple: patient-triggered · ▲ grey: time-triggered</span><span>Dashed purple line (VCV): pressure of a passive patient; the shaded gap is the patient's work</span><span>Bottom trace Pes/PL: oesophageal balloon pressure and PL = Paw − Pes. PL ee and PL ei are static values as in a hold; target PL ee about −2 to +2, PL ei below 15–20. EL/Ers and chest wall pressure are in the patient settings.</span><span>Space: freeze · F: full screen</span></div>`,
   foot: `<p style="margin:0 0 6px">For education only, not for clinical decisions. The screen layout is inspired by ICU ventilators; it is not any manufacturer's product. Model: single-compartment equation of motion (Paw = Flow×R + Volume×E + PEEP − Pmus) plus patient muscle pressure; gas exchange is not modelled (FiO₂ is display only). Values marked * come from the model; a real ventilator does not measure them directly.</p>
     <p style="margin:0 0 2px"><b>References</b></p>
     <ol style="margin:0;padding-left:18px">
       <li>Murias G, Lucangelo U, Blanch L. Patient-ventilator asynchrony. <i>Curr Opin Crit Care</i> 2016;22:53–59.</li>
+      <li>Ball L, Talmor D, Pelosi P. Transpulmonary pressure monitoring in critically ill patients: pearls and pitfalls. <i>Crit Care</i> 2024;28. doi:10.1186/s13054-024-04950-y</li>
       <li>Hamilton Medical. Patient-ventilator asynchrony reference card (ELO2019041N.04), 2023.</li>
       <li>Tonetti T, Merola R, Gregoretti C, Ranieri VM. Patient–ventilator interaction. <i>Textbook of Critical Care</i>, Chapter 54, pp. 393–399.</li>
       <li>Hess DR, Kacmarek RM. Patient-ventilator interaction. <i>Essentials of Mechanical Ventilation</i>, Chapter 15, pp. 153–166.</li>
@@ -1023,7 +1035,7 @@ const DEF = {
   mode: 'VCV', PEEP: 5, Vt: 0.45, Fset: 50, pattern: 'square', pause: 0, rate: 14,
   Pinsp: 15, Ti: 1.0, PS: 10, ETS: 25, rise: 0.15,
   trigType: 'flow', trig: 2, trigP: 1, FiO2: 40,
-  C: 50, R: 10, Rexp: 1, Pcrit: 0, cardiac: 0, hr: 100,
+  C: 50, R: 10, Rexp: 1, Pcrit: 0, ELr: 0.5, Pcw: 3, cardiac: 0, hr: 100,
   pt: { rr: 0, pmax: 6, ti: 0.9, jitter: 0.08, expPush: 0 },
   reverse: { ratio: 0, delay: 0.55, pmax: 8, ti: 0.8 },
 };
@@ -1048,6 +1060,8 @@ const CH = [
   { k: 'flow', name: 'Akım', unit: 'L/dk', min: -120, max: 120, ticks: [-60, 0, 60], color: '--flow' },
   { k: 'vol', name: 'Hacim', unit: 'mL', min: -50, max: 1100, ticks: [0, 500, 1000], color: '--vol' },
   { k: 'pmus', name: 'Pmus', unit: 'cmH₂O', min: -20, max: 16, ticks: [-10, 0, 10], color: '--pmus' },
+  { k: 'pes', name: 'Pes', unit: 'cmH₂O', min: -10, max: 20, ticks: [-5, 0, 5, 10, 15], color: '--pmus' },
+  { k: 'pl', name: 'PL', unit: 'cmH₂O', min: -10, max: 30, ticks: [0, 10, 20], color: '--pmus' },
 ];
 
 const $ = id => document.getElementById(id);
@@ -1241,16 +1255,19 @@ function arcPath(f) {
 
 // ---- Hasta satırı ----
 const PRESETS = [
-  ['Normal', { C: 50, R: 10, Rexp: 1, Pcrit: 0 }, 'Normal akciğer: C 50, R 10'],
-  ['KOAH alevlenme', { C: 60, R: 25, Rexp: 1.4, Pcrit: 8 }, 'Yüksek direnç (ekspiryumda daha da yüksek), normal-yüksek kompliyans, uzun τ, ekspiratuvar akım kısıtlılığı: hava hapsine yatkın'],
-  ['ARDS', { C: 25, R: 10, Rexp: 1, Pcrit: 0 }, 'Düşük kompliyans, kısa τ'],
+  ['Normal', { C: 50, R: 10, Rexp: 1, Pcrit: 0, ELr: 0.5, Pcw: 3 }, 'Normal akciğer: C 50, R 10'],
+  ['KOAH alevlenme', { C: 60, R: 25, Rexp: 1.4, Pcrit: 8, ELr: 0.5, Pcw: 3 }, 'Yüksek direnç (ekspiryumda daha da yüksek), normal-yüksek kompliyans, uzun τ, ekspiratuvar akım kısıtlılığı: hava hapsine yatkın'],
+  ['ARDS', { C: 25, R: 10, Rexp: 1, Pcrit: 0, ELr: 0.75, Pcw: 8 }, 'Düşük kompliyans, kısa τ, göğüs duvarı sertliği (abdominal basınç): düşük PEEP\'te PL ee negatif'],
+  ['Amfizem', { C: 100, R: 12, Rexp: 2, Pcrit: 7, ELr: 0.3, Pcw: 3 }, 'Çok yüksek kompliyans (elastik geri çekilme kaybı), ekspiryumda yüksek direnç, çok uzun τ, erken hava yolu çökmesi: belirgin hiperinflasyon ve auto-PEEP'],
 ];
 const PAT = [
   { preset: 1, label: 'Hazır hasta' },
-  { key: 'C', label: 'Kompliyans', min: 10, max: 120, step: 1, unit: 'mL/cmH₂O' },
+  { key: 'C', label: 'Kompliyans', min: 10, max: 150, step: 1, unit: 'mL/cmH₂O' },
   { key: 'R', label: 'Direnç', min: 2, max: 40, step: 1, unit: 'cmH₂O/L/s' },
   { key: 'Pcrit', label: 'Akım kısıtlılığı', min: 0, max: 15, step: 1, unit: 'cmH₂O', fmt: v => v ? L('Pcrit ', 'Pcrit ') + v + ' cmH₂O' : T('yok') },
   { tau: 1 },
+  { key: 'ELr', label: 'EL/Ers', min: 0.2, max: 0.9, step: 0.05, unit: '', show: () => trace4 !== 'pmus' },
+  { key: 'Pcw', label: 'Göğüs duvarı basıncı', min: 0, max: 15, step: 1, unit: 'cmH₂O', show: () => trace4 !== 'pmus' },
   { hint: p => (p.Rexp > 1 ? L(`Eksp. direnç ×${p.Rexp}`, `Exp. resistance ×${p.Rexp}`) : '') + (p.Pcrit > p.PEEP ? (p.Rexp > 1 ? ' · ' : '') + L(`eksternal PEEP Pcrit'in ${p.Pcrit - p.PEEP} altında`, `external PEEP ${p.Pcrit - p.PEEP} below Pcrit`) : '') },
   { sep: 1 },
   { key: 'pt.rr', label: 'Efor sıklığı', min: 0, max: 40, step: 1, unit: '/dk', fmt: v => v ? v + ' ' + T('/dk') : T('yok') },
@@ -1292,8 +1309,8 @@ function buildPat() {
 }
 
 // senaryonun kendi hasta mekaniği (hazır hasta seçildikten sonra geri dönmek için)
-const MECH = ['C', 'R', 'Rexp', 'Pcrit'];
-function scenPat() { const q = SCEN[curKey] ? scenParams() : P; const o = {}; for (const k of MECH) o[k] = q[k] || (k === 'Rexp' ? 1 : 0); return o; }
+const MECH = ['C', 'R', 'Rexp', 'Pcrit', 'ELr', 'Pcw'];
+function scenPat() { const q = SCEN[curKey] ? scenParams() : P; const o = {}; for (const k of MECH) o[k] = q[k] || (k === 'Rexp' ? 1 : k === 'ELr' ? 0.5 : k === 'Pcw' ? 3 : 0); return o; }
 // hasta (mekanik, efor, entrainment, kalp) senaryodakinden farklı mı?
 const PATKEYS = ['C', 'R', 'Rexp', 'Pcrit', 'pt', 'reverse', 'cardiac', 'hr'];
 let patMod = false, patModT = 0, misShown = false, patSig = '';
@@ -1483,7 +1500,7 @@ function sample() {
 
 function lanes() {
   const showP = $('cPmus').checked;
-  const list = showP ? CH : CH.slice(0, 3);
+  const list = showP ? [...CH.slice(0, 3), CH.find(c => c.k === trace4)] : CH.slice(0, 3);
   const weights = showP ? [1.15, 1.15, 0.9, 0.8] : [1.2, 1.2, 1];
   const tot = weights.reduce((a, b) => a + b, 0);
   const avail = H - 8 - BOTTOM;
@@ -1494,7 +1511,7 @@ function lanes() {
 
 // ---- Otomatik Y ekseni: görünen penceredeki en küçük/büyük değere göre basamaklı ölçek ----
 CH.forEach(c => { c.f = { min: c.min, max: c.max, ticks: c.ticks }; c.shrink = 0; });
-let autoAx = true, lastScale = 0;
+let autoAx = true, lastScale = 0, trace4 = store.get('trace4', 'pmus');
 const ceilTo = (v, s) => Math.ceil(v / s) * s, floorTo = (v, s) => Math.floor(v / s) * s;
 function tickStep(range, n) { for (const s of [1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500]) if (range / s <= n) return s; return 1000; }
 function axisTarget(c, lo, hi) {
@@ -1504,6 +1521,7 @@ function axisTarget(c, lo, hi) {
   }
   if (c.k === 'flow') { const a = Math.max(30, ceilTo(Math.max(-lo, hi) * 1.1, 20)); return { min: -a, max: a }; }
   if (c.k === 'vol') { const max = Math.max(300, ceilTo(hi * 1.1, 100)); return { min: -Math.round(max * 0.05), max }; }
+  if (c.k === 'pes' || c.k === 'pl') return { min: Math.min(-5, floorTo(lo - 2, 5)), max: Math.max(10, ceilTo(hi + 2, 5)) };
   const a = Math.max(10, ceilTo(Math.max(-lo, hi) * 1.15, 5)); return { min: -a, max: a };
 }
 function applyAxis(c, t) {
@@ -1574,6 +1592,17 @@ function draw() {
       ctx.lineTo(X, clamp(b.l[x]));
     }
     ctx.stroke();
+    if (ch.k === 'pes' || ch.k === 'pl') {
+      // statik transpulmoner basınç: son tamamlanan soluğun başında (PL ee) ve inspiryum sonunda (PL ei)
+      const lb = sim.breaths.filter(b => b.plei != null).pop();
+      if (lb) {
+        const ok = lb.plee >= -2 && lb.plee <= 2 && lb.plei < 20;
+        const txt = `PL ee ${lb.plee.toFixed(1)} · PL ei ${lb.plei.toFixed(1)} · ${LANG === 'en' ? 'target: ee −2…+2, ei < 20' : 'hedef: ee −2…+2, ei < 20'}`;
+        ctx.font = '600 11px system-ui,sans-serif'; ctx.textAlign = 'right';
+        ctx.fillStyle = ok ? COL['--tick'] : COL['--warn'];
+        ctx.fillText(txt, W - RIGHT - 6, ln.y0 + 12);
+      }
+    }
     if (ch.k === 'paw') {
       // VCV: pasif basınç (kesikli) ve gerçek eğriyle arasındaki alan = hastanın inspiratuvar işi
       ctx.fillStyle = COL['--pmus']; ctx.globalAlpha = .28;
@@ -1913,6 +1942,16 @@ $('bReset').onclick = () => {
   $('overlay').style.display = ''; $('frozen').classList.remove('on'); $('banner').classList.remove('on');
   ['bPause', 'bIHold', 'bEHold'].forEach(id => $(id).disabled = true);
 };
+function setTrace4(t) {
+  trace4 = ['pmus', 'pes', 'pl'].includes(t) ? t : 'pmus'; store.set('trace4', trace4);
+  document.querySelectorAll('#trace4 button').forEach(x => x.classList.toggle('on', x.dataset.t === trace4));
+  $('cPmus').checked = true; syncControls(); rescale(true);
+}
+document.querySelectorAll('#trace4 button').forEach(b => {
+  b.title = { pmus: L('Hastanın inspiratuvar kas basıncı', 'Patient inspiratory muscle pressure'), pes: L('Özofagus basıncı: plevral basıncın vekili (balon kateterle ölçülür)', 'Oesophageal pressure: surrogate of pleural pressure (balloon catheter)'), pl: L('Transpulmoner basınç: PL = Paw − Pes. Hedef: PL ee yaklaşık −2 ile +2, PL ei 15–20 altı', 'Transpulmonary pressure: PL = Paw − Pes. Targets: PL ee about −2 to +2, PL ei below 15–20') }[b.dataset.t];
+  b.onclick = () => setTrace4(b.dataset.t);
+});
+setTrace4(trace4);
 document.querySelectorAll('#speed button').forEach(b => b.onclick = () => {
   speed = +b.dataset.s; document.querySelectorAll('#speed button').forEach(x => x.classList.toggle('on', x === b));
 });
