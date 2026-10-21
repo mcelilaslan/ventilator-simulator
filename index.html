@@ -752,7 +752,7 @@ const SCEN = {
   prvc: {
     name: 'PRVC\'de destek azalması', short: 'Hasta çektikçe basınç düşer',
     p: { mode: 'PRVC', PEEP: 5, Vt: 0.45, Pinsp: 15, Ti: 0.9, rate: 12, rise: 0.1, trig: 2, C: 50, R: 10, pt: { rr: 20, pmax: 9, ti: 1.0, jitter: 0.06 } },
-    fix: { mode: 'PSV', PS: 8, ETS: 25, rate: 0 }, fixText: 'PRVC → PSV 8 (sabit destek)',
+    fix: { mode: 'PSV', PS: 6, ETS: 25, rate: 0 }, fixText: 'PRVC → PSV 6 (sabit destek)',
     marks: ['DESTEK ↓'],
     look: ['İlk soluklarda basınç yüksek; hasta güçlü çektiği için VT hedefi aşar.', 'Ventilatör her solukta ΔPinsp\'i düşürür (düğmelerin yanında güncel değer); basınç eğrisi neredeyse PEEP düzeyine iner.', 'VT hedefte kalır, ama hacmi artık neredeyse tamamen hastanın kası (mor iz) sağlar.'],
     mech: "Adaptif volüm modları (PRVC, volüm destek) solunan hacmi ölçer ve hedef VT aşılınca bir sonraki soluğun basıncını düşürür. Güçlü eforlu hastada bu, ventilatörün tam ihtiyaç anında desteği geri çekmesi demektir: hasta ne kadar çekerse o kadar az destek alır ve iş yükü artar. Bu bir akım uyumsuzluğudur; en zararlı asenkroniler arasında sayılır.",
@@ -762,22 +762,22 @@ const SCEN = {
   starve: {
     name: 'Akım açlığı', short: 'VCV, yetersiz akım',
     p: { mode: 'VCV', PEEP: 5, Vt: 0.45, Fset: 30, rate: 12, trig: 2, C: 45, R: 10, pt: { rr: 24, pmax: 14, ti: 0.9, jitter: 0.12 } },
-    fix: { mode: 'PSV', PS: 8, rise: 0.1, ETS: 25 }, fixText: 'VCV → PSV 8 cmH₂O',
+    fix: { mode: 'PSV', PS: 5, rise: 0.1, ETS: 25 }, fixText: 'VCV → PSV 5 cmH₂O',
     marks: ['AKIM AÇLIĞI'],
     look: ['Basınç eğrisinde inspiryum sırasında içe çökme (yukarı konkavite); pasif VCV\'deki düz rampanın yerine.', 'Güçlü eforda basınç PEEP\'in altına inebilir.', 'Akım kare ve sabit: hastanın talebi artsa da değişmiyor.', 'Kesikli mor çizgi pasif hastadaki basınçtır; gerçek eğriyle arasındaki gölgeli alan hastanın yaptığı iştir.', 'Ptepe soluktan soluğa değişir, çünkü her soluktaki efor farklıdır.'],
     mech: "Akım sabitlendiğinde basınç eğrisinin eğimi, verilen akımın hastanın istediği akıma oranını yansıtır. Basınç PEEP'in altına iniyorsa ventilatör yük ekliyordur. Akımı artırmak dürtüyü ve kas işini azaltır, ama solunum hızını artırabilir. Basınç hedefli solukta akım bağımlı değişkendir ve talebe göre artar; bu yüzden talebe daha iyi uyar. Akım uyumsuzluğu en zararlı asenkronilerdendir.",
     causes: ["Ventilatör: VCV'de akım çok düşük; basınç modlarında rampa çok yavaş", "Hasta: yüksek efor ve ventilasyon talebi", "Mod seçimi"],
-    fixNote: 'Basınç hedefli modda akım talebe göre artar; basınç eğrisi düzleşir. Bu hastada Vt büyür, dürtü yüksektir. VCV\'de kalınacaksa akım artırılır ya da azalan paterne geçilir (Akım düğmesini 30→60 yapıp gölgeli alanın küçüldüğünü izleyin). Güçlü eforda basınç modu transpulmoner basıncı ayarlanan basıncın çok üstüne çıkarabilir; bunu da izleyin.',
+    fixNote: 'Basınç hedefli modda akım talebe göre artar; basınç eğrisi düzleşir. Dürtü yüksek olduğu için düşük destek (PS 5) yeterlidir: Vt yaklaşık 540 mL olur ve büyük kısmını hastanın kası sağlar. VCV\'de kalınacaksa akım artırılır ya da azalan paterne geçilir (Akım düğmesini 30→60 yapıp gölgeli alanın küçüldüğünü izleyin). Güçlü eforda basınç modu transpulmoner basıncı ayarlanan basıncın çok üstüne çıkarabilir; bunu da izleyin.',
   },
   double: {
     name: 'Çift tetikleme', short: 'Arka arkaya iki soluk',
     p: { mode: 'VCV', PEEP: 5, Vt: 0.40, Fset: 60, rate: 12, trig: 2, C: 40, R: 10, pt: { rr: 20, pmax: 12, ti: 1.2, jitter: 0.05 } },
-    fix: { mode: 'PCV', Pinsp: 8, Ti: 1.0 }, fixText: 'VCV → PCV, ΔPinsp 8, Ti 1.0 s',
+    fix: { mode: 'PCV', Pinsp: 6, Ti: 1.0 }, fixText: 'VCV → PCV, ΔPinsp 6, Ti 1.0 s',
     marks: ['ÇİFT'],
     look: ['Tek eforda iki soluk; aradaki ekspiryum ortalama Ti\'nin yarısından kısa.', 'İkinci solukta hacim yığılır, tepe basınç yükselir (VCV\'de Vt yaklaşık iki katı).', 'Ekspiryum başında akım hızla tersine dönüp yeniden tetikler.'],
     mech: "Hastanın nöral inspiryum süresi ventilatörünkinden uzun. Makine siklusa geçtiğinde hasta hâlâ çeker; talep yüksekse ikinci tetik gelir. İki soluk arasında ekspiryum çok kısadır ve hacim yığılır (breath stacking). Erken siklusla aynı olayın ağır hâlidir. Ters tetik ve akım uyumsuzluğuyla birlikte en zararlı asenkronilerdendir.",
     causes: ["Ventilatör: zaman sikluslu modda kısa Ti; akım sikluslu modda yüksek ETS; düşük PS; kısa rampa; akım açlığı", "Hasta: yüksek ventilasyon talebi ve dürtü, kısa zaman sabiti, ters tetikleme"],
-    fixNote: "Ti nöral inspiryuma yakın uzar (0.4 → 1.0 s) ve PCV'de akım hastanın çekişine göre artar; tek efor tek soluk olur, basınç eğrisi düzgün ve tek tepelidir. VCV'de yalnızca Ti'yi uzatmak (akım 40, azalan patern, Tplato 0.3 s) çift tetiklemeyi giderir ama bu güçlü eforda akım açlığı yaratır: sabit akım talebi karşılamaz, Paw inspiryumda PEEP'in altına çöker ve mor alan büyür. VT yaklaşık 400'den 600 mL'ye çıkar, çünkü güçlü efor (12 cmH₂O) basınca eklenir: yüksek dürtünün nedenini (ağrı, asidoz, anksiyete) arayın, gerekirse sedasyonla baskılayın. PSV'de ETS düşürülür.",
+    fixNote: "Ti nöral inspiryuma yakın uzar (0.4 → 1.0 s) ve PCV'de akım hastanın çekişine göre artar; tek efor tek soluk olur, basınç eğrisi düzgün ve tek tepelidir. VCV'de yalnızca Ti'yi uzatmak (akım 40, azalan patern, Tplato 0.3 s) çift tetiklemeyi giderir ama bu güçlü eforda akım açlığı yaratır: sabit akım talebi karşılamaz, Paw inspiryumda PEEP'in altına çöker ve mor alan büyür. Destek düşük tutulur (ΔPinsp 6), çünkü güçlü efor (12 cmH₂O) basınca eklenir: VT yaklaşık 400'den 550 mL'ye çıkar (yaklaşık 8 mL/kg). yüksek dürtünün nedenini (ağrı, asidoz, anksiyete) arayın, gerekirse sedasyonla baskılayın. PSV'de ETS düşürülür.",
   },
   early: {
     name: 'Erken siklus', short: 'Soluk hastadan önce biter',
@@ -831,14 +831,14 @@ const SCEN = {
     fixNote: 'Daha düşük frekans ve daha yüksek akım (daha kısa Ti) ekspiryuma zaman bırakır; auto-PEEP yaklaşık 2 → 0.3 cmH₂O, hapsolan hacim yaklaşık 95 → 15 mL iner. Burada τ yaklaşık 0.9 s, 3τ yaklaşık 2.8 s: Te 1.6 s\'den 3.3 s\'ye uzar ve 3τ\'yı karşılar; I:E 1:2.4\'ten 1:7\'ye çıkar. Frekansı düşürmek ekspiryuma en çok zaman kazandıran adımdır. Ptepe akım arttığı için biraz yükselir (dirençsel basınç); Pplato düşer. VE yaklaşık 12 → 7 L/dk azalır: KOAH\'ta bu kabul edilen bir ödünleşimdir (permisif hiperkapni), pH ve PaCO₂ izlenir. Düzeltmeden sonra Eksp. hold ile PEEPtot\'u tekrar ölçün. Hasta efor yapıyorsa ve akım kısıtlılığı varsa (KOAH hazır hastası), ölçülen PEEPtot\'un %75–85\'i kadar eksternal PEEP tetik yükünü azaltır: hasta auto-PEEP\'i yenmek zorunda kalmaz, etkisiz efor ve gecikme kaybolur. Ptepe artmamalıdır; artarsa PEEP geri alınır.',
   },
   chestwall: {
-    name: 'Sert göğüs duvarı (obezite)', short: 'Yüksek Pplato, düşük PL', tr4: 'pl',
-    p: { mode: 'VCV', PEEP: 12, Vt: 0.40, Fset: 45, pause: 0.3, rate: 18, trig: 2, C: 20, R: 10, ELr: 0.6, Pcw: 12 },
-    fix: { PEEP: 20 }, fixText: 'PEEP 12→20 (PL ee ≈ 0)',
+    name: 'Sert göğüs duvarı (obezite)', short: 'Negatif PL ee, PEEP yetersiz', tr4: 'pl',
+    p: { mode: 'VCV', PEEP: 8, Vt: 0.42, Fset: 40, pause: 0.3, rate: 18, trig: 2, C: 30, R: 8, ELr: 0.65, Pcw: 9 },
+    fix: { PEEP: 14 }, fixText: 'PEEP 8→14 (PL ee ≈ 0)',
     marks: [],
-    look: ['Pplato yaklaşık 32 cmH₂O, yüksek görünür. PL izine bakın: PL ei yaklaşık 7 cmH₂O, akciğer aşırı gerilmiyor.', 'Pes ekspiryum sonunda yaklaşık 17 cmH₂O: sert ve ağır göğüs duvarı plevral basıncı yükseltir. Alt izi Pes\'e alıp bakabilirsiniz.', 'PL ee yaklaşık −5 cmH₂O: ekspiryum sonunda plevral basınç PEEP\'ten yüksek, bağımlı bölgelerde alveoller kapanmaya eğilimli.', 'Paw\'ın bir kısmı göğüs duvarını germeye harcanır: Pplato − PEEP 20 cmH₂O, bunun yalnızca 12\'si akciğere düşer (EL/Ers 0.6).'],
-    mech: "Solunum sistemi elastansı akciğer ve göğüs duvarı elastanslarının toplamıdır (Ers = EL + Ecw). Obezite, karın içi basınç artışı, asit, yaygın ödem ya da göğüs duvarı yanığında göğüs duvarı sertleşir ve plevral basınç yükselir. Ventilatördeki Paw ikisini birlikte gösterir; akciğeri geren basınç PL = Paw − Pes'tir. Bu hastada yüksek Pplato aşırı gerilme anlamına gelmez. Asıl sorun ekspiryum sonunda Pes'in PEEP'i aşması ve alveollerin kapanmasıdır.",
+    look: ['Pes ekspiryum sonunda yaklaşık 12 cmH₂O, ayarlı PEEP\'ten (8) yüksek: sert ve ağır göğüs duvarı plevral basıncı yükseltir. Alt izi Pes\'e alıp bakabilirsiniz.', 'PL ee yaklaşık −4 cmH₂O: ekspiryum sonunda alveolü dışarıdan sıkan basınç içerideki basınçtan büyük, bağımlı bölgelerde alveoller kapanmaya eğilimli.', 'Pplato 22, Driving ΔP 14 cmH₂O. Bu basıncın bir kısmı göğüs duvarını germeye harcanır: akciğere düşen pay yaklaşık 9 cmH₂O (EL/Ers 0.65).', 'PL ei yaklaşık 5 cmH₂O: akciğer aşırı gerilmiyor. Sorun inspiryumda değil, ekspiryum sonundadır.'],
+    mech: "Solunum sistemi elastansı akciğer ve göğüs duvarı elastanslarının toplamıdır (Ers = EL + Ecw). Obezite, karın içi basınç artışı, asit, yaygın ödem ya da göğüs duvarı yanığında göğüs duvarı sertleşir ve plevral basınç yükselir. Ventilatördeki Paw ikisini birlikte gösterir; akciğeri geren basınç PL = Paw − Pes'tir. Bu hastada Pes ekspiryum sonunda PEEP'i aşar ve alveoller kapanır. Aynı nedenle yüksek bir Pplato da tek başına aşırı gerilme anlamına gelmez; PL ile birlikte yorumlanır.",
     causes: ["Morbid obezite", "Karın içi hipertansiyon, abdominal kompartman sendromu, asit", "Yaygın ödem, göğüs duvarı yanığı"],
-    fixNote: 'PEEP 12 → 20 cmH₂O: PL ee yaklaşık −5 → 0 olur, alveoller ekspiryum sonunda açık kalır. Pplato 32 → 40 cmH₂O çıkar ama PL ei yalnızca 7 → 12 cmH₂O olur ve 20\'nin altında kalır; Pes ekspiryum sonunda yaklaşık 20 cmH₂O\'dur. Pplato\'ya bakıp Vt ya da PEEP\'i düşürmek burada yanlış olur: PL ee daha da negatifleşir. Modelde kompliyans sabittir; gerçek hastada açılan alveollerle kompliyans artabilir. Yüksek PEEP\'te hemodinamiyi izleyin. Pes rehberli PEEP büyük bir randomize çalışmada (EPVent-2) yüksek PEEP/FiO₂ tablosundan üstün çıkmadı; yöntem en çok göğüs duvarı bozuk hastada yol gösterir.',
+    fixNote: 'PEEP 8 → 14 cmH₂O: PL ee yaklaşık −4 → 0 olur, alveoller ekspiryum sonunda açık kalır. VT ve Driving ΔP (14) değişmez; Pplato 22 → 28, Ptepe 27 → 33 cmH₂O olur. PL ei 5 → 9 cmH₂O, hedefin (20) çok altında. Pes ekspiryum sonunda yaklaşık 14 cmH₂O\'dur. PEEP\'i yalnızca Pplato\'ya bakarak düşük tutmak bu hastada alveol kapanmasını sürdürür. Modelde kompliyans sabittir; gerçek hastada açılan alveollerle kompliyans artabilir. PEEP artışında hemodinamiyi izleyin. Pes rehberli PEEP büyük bir randomize çalışmada (EPVent-2) yüksek PEEP/FiO₂ tablosundan üstün çıkmadı; yöntem en çok göğüs duvarı bozuk hastada yol gösterir.',
   },
   psili: {
     name: 'P-SILI: güçlü efor', short: 'Masum Paw, yüksek PL', tr4: 'pl',
@@ -897,7 +897,7 @@ const SCEN_EN = {
     look: ['Pressure is high on the first breaths; the patient pulls hard, so VT exceeds the target.', 'The ventilator lowers ΔPinsp each breath (current value next to the knobs); the pressure curve falls almost to PEEP.', 'VT stays on target, but the volume is now delivered almost entirely by the patient\'s muscles (purple trace).'],
     mech: "Adaptive volume modes (PRVC, volume support) measure the delivered volume and lower the next breath's pressure when the target VT is exceeded. In a patient with strong effort this means the ventilator withdraws support exactly when it is needed: the harder the patient pulls, the less support it gets and the higher the work load. This is a flow asynchrony and is one of the most harmful asynchronies.",
     causes: ["Ventilator: adaptive volume-targeted mode in a high-drive patient, low target VT", "Patient: high ventilatory demand (acidosis, pain, anxiety, sepsis)"],
-    fixText: 'PRVC → PSV 8 (fixed support)',
+    fixText: 'PRVC → PSV 6 (fixed support)',
     fixNote: "With fixed-pressure support, flow rises with demand and support is not withdrawn. Raising the target VT is another option; VT can go up to 8 mL/kg if Pplat ≤ 30. Look separately for the cause of the demand (pain, acidosis).",
   },
   starve: {
@@ -905,16 +905,16 @@ const SCEN_EN = {
     look: ['A scooped-out pressure curve during inspiration (upward concavity) instead of the straight ramp of passive VCV.', 'With a strong effort pressure can fall below PEEP.', 'Flow is square and constant: it does not change although the patient\'s demand rises.', 'The dashed purple line is the pressure of a passive patient; the shaded area between it and the real curve is the work done by the patient.', 'Ppeak varies breath to breath because each effort is different.'],
     mech: "When flow is fixed, the slope of the pressure curve reflects the ratio of delivered to desired flow. If pressure falls below PEEP, the ventilator is adding load. Raising flow lowers drive and muscle work, but may raise respiratory rate. In a pressure-targeted breath flow is the dependent variable and rises with demand, so it matches demand better. Flow asynchrony is one of the most harmful asynchronies.",
     causes: ["Ventilator: flow too low in VCV; rise time too slow in pressure modes", "Patient: high effort and ventilatory demand", "Mode selection"],
-    fixText: 'VCV → PSV 8 cmH₂O',
-    fixNote: 'In a pressure-targeted mode flow rises with demand; the pressure curve flattens. In this patient Vt grows; drive is high. If staying in VCV, raise flow or switch to a decelerating pattern (turn the Flow knob from 30 to 60 and watch the shaded area shrink). With strong effort a pressure mode can push transpulmonary pressure well above the set pressure; watch for that too.',
+    fixText: 'VCV → PSV 5 cmH₂O',
+    fixNote: 'In a pressure-targeted mode flow rises with demand; the pressure curve flattens. Because drive is high, low support (PS 5) is enough: Vt is about 540 mL and most of it comes from the patient\'s muscles. If staying in VCV, raise flow or switch to a decelerating pattern (turn the Flow knob from 30 to 60 and watch the shaded area shrink). With strong effort a pressure mode can push transpulmonary pressure well above the set pressure; watch for that too.',
   },
   double: {
     name: 'Double triggering', short: 'Two breaths back to back',
     look: ['Two breaths for a single effort; the expiration between them is shorter than half the mean Ti.', 'Volume stacks on the second breath and peak pressure rises (in VCV Vt roughly doubles).', 'At the start of expiration flow reverses quickly and triggers again.'],
     mech: "The patient's neural inspiratory time is longer than the ventilator's. When the machine cycles, the patient is still pulling; with high demand a second trigger follows. Expiration between the two breaths is very short and volume stacks (breath stacking). It is the severe form of early cycling. Together with reverse triggering and flow asynchrony it is one of the most harmful asynchronies.",
     causes: ["Ventilator: short Ti in time-cycled modes; high ETS in flow-cycled modes; low PS; short rise time; flow starvation", "Patient: high ventilatory demand and drive, short time constant, reverse triggering"],
-    fixText: 'VCV → PCV, ΔPinsp 8, Ti 1.0 s',
-    fixNote: "Ti lengthens close to neural inspiration (0.4 → 1.0 s), and in PCV flow rises with the patient's pull; one effort, one breath, and the pressure curve is smooth with a single peak. In VCV, only lengthening Ti (flow 40, decelerating pattern, Tplat 0.3 s) removes double triggering but creates flow starvation with this strong effort: fixed flow does not meet demand, Paw sags below PEEP during inspiration and the purple area grows. VT rises from about 400 to 600 mL because the strong effort (12 cmH₂O) adds to the pressure: look for the cause of high drive (pain, acidosis, anxiety) and suppress it with sedation if needed. In PSV lower ETS.",
+    fixText: 'VCV → PCV, ΔPinsp 6, Ti 1.0 s',
+    fixNote: "Ti lengthens close to neural inspiration (0.4 → 1.0 s), and in PCV flow rises with the patient's pull; one effort, one breath, and the pressure curve is smooth with a single peak. In VCV, only lengthening Ti (flow 40, decelerating pattern, Tplat 0.3 s) removes double triggering but creates flow starvation with this strong effort: fixed flow does not meet demand, Paw sags below PEEP during inspiration and the purple area grows. Support is kept low (ΔPinsp 6) because the strong effort (12 cmH₂O) adds to the pressure: VT rises from about 400 to 550 mL (about 8 mL/kg). look for the cause of high drive (pain, acidosis, anxiety) and suppress it with sedation if needed. In PSV lower ETS.",
   },
   early: {
     name: 'Early cycling', short: 'Breath ends before the patient',
@@ -957,12 +957,12 @@ const SCEN_EN = {
     fixNote: 'A lower rate and higher flow (shorter Ti) leave time for expiration; auto-PEEP falls from about 2 to 0.3 cmH₂O and trapped volume from about 95 to 15 mL. Here τ is about 0.9 s and 3τ about 2.8 s: Te lengthens from 1.6 to 3.3 s and meets 3τ; I:E goes from 1:2.4 to 1:7. Lowering the rate gains the most expiratory time. Ppeak rises a little because flow is higher (resistive pressure); Pplat falls. VE falls from about 12 to 7 L/min: in COPD this is an accepted trade-off (permissive hypercapnia); follow pH and PaCO₂. Re-measure PEEPtot with Exp. hold after the change. If the patient is making efforts and has flow limitation (COPD preset), external PEEP at 75–85% of measured PEEPtot lowers the trigger load: the patient no longer has to overcome auto-PEEP, and ineffective efforts and delays disappear. Ppeak should not rise; if it does, take the PEEP back.',
   },
   chestwall: {
-    name: 'Stiff chest wall (obesity)', short: 'High Pplat, low PL',
-    look: ['Pplat is about 32 cmH₂O and looks high. Look at the PL trace: PL ei is about 7 cmH₂O; the lung is not overdistended.', 'Pes at end-expiration is about 17 cmH₂O: a stiff, heavy chest wall raises pleural pressure. Switch the bottom trace to Pes to see it.', 'PL ee is about −5 cmH₂O: at end-expiration pleural pressure exceeds PEEP and dependent alveoli tend to close.', 'Part of Paw is spent stretching the chest wall: Pplat − PEEP is 20 cmH₂O and only 12 of it reaches the lung (EL/Ers 0.6).'],
-    mech: "Respiratory system elastance is the sum of lung and chest wall elastance (Ers = EL + Ecw). In obesity, raised intra-abdominal pressure, ascites, generalised oedema or chest wall burns the chest wall stiffens and pleural pressure rises. Paw on the ventilator reflects both; the pressure that stretches the lung is PL = Paw − Pes. In this patient a high Pplat does not mean overdistension. The real problem is Pes exceeding PEEP at end-expiration, so alveoli close.",
+    name: 'Stiff chest wall (obesity)', short: 'Negative PL ee, PEEP too low',
+    look: ['Pes at end-expiration is about 12 cmH₂O, above the set PEEP (8): a stiff, heavy chest wall raises pleural pressure. Switch the bottom trace to Pes to see it.', 'PL ee is about −4 cmH₂O: at end-expiration the pressure squeezing the alveoli from outside exceeds the pressure inside, so dependent alveoli tend to close.', 'Pplat 22, Driving ΔP 14 cmH₂O. Part of this pressure is spent stretching the chest wall: the lung\'s share is about 9 cmH₂O (EL/Ers 0.65).', 'PL ei is about 5 cmH₂O: the lung is not overdistended. The problem is at end-expiration, not in inspiration.'],
+    mech: "Respiratory system elastance is the sum of lung and chest wall elastance (Ers = EL + Ecw). In obesity, raised intra-abdominal pressure, ascites, generalised oedema or chest wall burns the chest wall stiffens and pleural pressure rises. Paw on the ventilator reflects both; the pressure that stretches the lung is PL = Paw − Pes. In this patient Pes exceeds PEEP at end-expiration and alveoli close. For the same reason a high Pplat alone does not mean overdistension; read it together with PL.",
     causes: ["Morbid obesity", "Intra-abdominal hypertension, abdominal compartment syndrome, ascites", "Generalised oedema, chest wall burns"],
-    fixText: 'PEEP 12→20 (PL ee ≈ 0)',
-    fixNote: 'PEEP 12 → 20 cmH₂O: PL ee goes from about −5 to 0 and alveoli stay open at end-expiration. Pplat rises from 32 to 40 cmH₂O, but PL ei only from 7 to 12 cmH₂O and stays below 20; Pes at end-expiration is about 20 cmH₂O. Lowering Vt or PEEP because of Pplat would be wrong here: PL ee would become even more negative. Compliance is fixed in the model; in a real patient it may improve as alveoli open. Watch haemodynamics at high PEEP. Pes-guided PEEP was not superior to a high PEEP/FiO₂ table in a large randomised trial (EPVent-2); the method is most informative when the chest wall is abnormal.',
+    fixText: 'PEEP 8→14 (PL ee ≈ 0)',
+    fixNote: 'PEEP 8 → 14 cmH₂O: PL ee goes from about −4 to 0 and alveoli stay open at end-expiration. VT and Driving ΔP (14) do not change; Pplat goes from 22 to 28 and Ppeak from 27 to 33 cmH₂O. PL ei goes from 5 to 9 cmH₂O, well below the target (20). Pes at end-expiration is about 14 cmH₂O. Keeping PEEP low by looking only at Pplat keeps alveoli closing in this patient. Compliance is fixed in the model; in a real patient it may improve as alveoli open. Watch haemodynamics when raising PEEP. Pes-guided PEEP was not superior to a high PEEP/FiO₂ table in a large randomised trial (EPVent-2); the method is most informative when the chest wall is abnormal.',
   },
   psili: {
     name: 'P-SILI: strong effort', short: 'Innocent Paw, high PL',
@@ -1215,6 +1215,7 @@ function toggleFix() {
   const np = scenParams();
   for (const k in P) delete P[k];
   Object.assign(P, np);
+  sim.meas = {};
   if (P.pt.rr && !sim.efforts.length) sim.nextEffort = sim.t + 0.3;
   buildKnobs(); syncControls(); renderHdr(); updFixBtn();
 }
@@ -1377,12 +1378,14 @@ function updPatMod() {
 }
 function applyPreset(m) {
   Object.assign(P, m);
+  if (sim) sim.meas = {};
   if (!sim) { startCustom(P, 'Özel ayar'); return; }
   syncControls(); renderHdr();
 }
 
 function change(c, v) {
   if (c.scale) v = v / c.scale;
+  if (sim) sim.meas = {}; // ayar değişince eski hold ölçümleri (PEEPtot, Pplato) geçersiz
   set(P, c.key, v);
   if (c.key === 'mode') {
     if (v === 'PSV') {
