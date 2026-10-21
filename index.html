@@ -170,6 +170,8 @@ canvas{display:block;width:100%;height:460px}
 .big .l small{font-weight:400;color:var(--scrMuted);margin-left:3px}
 .big .v{font-size:34px;line-height:1.05;text-align:right;font-variant-numeric:tabular-nums;font-weight:500}
 .big.alert .v,.sm.alert .v{color:var(--warn)}
+.sm.hot{outline:2px solid var(--warn);outline-offset:1px;border-radius:3px;animation:hotP 1.6s ease-in-out infinite}
+@keyframes hotP{50%{outline-color:transparent}}
 .smg{display:grid;grid-template-columns:1fr 1fr;gap:2px 8px;margin-top:4px}
 .sm .l{font-size:10.5px;color:var(--scrMuted)}
 .sm .v{font-size:16px;font-variant-numeric:tabular-nums;font-weight:600;text-align:right}
@@ -498,7 +500,7 @@ function startBreath(S, kind) {
 
 // ekspiryum, akım sıfıra inmeden yeni bir soluk ya da hasta eforuyla kesiliyorsa işaretle (ekspiryum başına bir kez)
 function expUnfinished(S) {
-  if (S.phase !== 'exp' || S.expFlag || !(S.out.flow < -3)) return;
+  if (S.phase !== 'exp' || S.expFlag || S.closeFlag || !(S.out.flow < -3)) return;
   S.expFlag = true;
   S.events.push({ t: S.t, type: 'AKIM SIFIRA İNMEDİ', ch: 'flow', v: Math.round(S.out.flow) });
 }
@@ -511,7 +513,7 @@ function endFlow(S) {
 }
 
 function endInsp(S) {
-  S.phase = 'exp'; S.phaseStart = S.t; S.expFlag = false;
+  S.phase = 'exp'; S.phaseStart = S.t; S.expFlag = false; S.closeFlag = false;
   const b = S.curBreath; b.Vti = S.Vtid; b.ti = S.t - b.start;
   for (const e of S.efforts) if (e.pushAt != null && e.pushEnd == null) e.pushEnd = S.t - e.start;
   S.tiHist.push(b.ti); if (S.tiHist.length > 6) S.tiHist.shift();
@@ -610,6 +612,11 @@ function step(S, dt) {
       // max(PEEP, Pcrit) sürer. Bu yüzden Pcrit altındaki eksternal PEEP ekspiratuvar akımı değiştirmez.
       const D = Math.max(p.PEEP, p.Pcrit || 0);
       F = Palv > D ? (D - Palv) / (p.R * (p.Rexp || 1) + Rv) : 0;
+      // hava yolu kapandı: akım sıfır ama gaz alveolde hapsoldu (akım eğrisinden görünmeyen auto-PEEP)
+      if (!S.closeFlag && !S.expFlag && -F * 60 < 3 && pmus < 0.05 && t - S.phaseStart > 0.3 && E * S.V - p.PEEP >= 1.5) {
+        S.closeFlag = true;
+        S.events.push({ t, type: 'GAZ HAPSİ', ch: 'flow', ap: Math.round(E * S.V - p.PEEP) });
+      }
       Paw = p.PEEP - Rvy * F;
     }
   }
@@ -718,8 +725,8 @@ const SCEN = {
     name: 'Auto-PEEP ve eksternal PEEP', short: 'Akım kısıtlılığında tetiklemek',
     p: { mode: 'VCV', PEEP: 3, Vt: 0.45, Fset: 60, rate: 12, trig: 2, C: 60, R: 18, Rexp: 1.6, Pcrit: 8, pt: { rr: 16, pmax: 7, ti: 0.8, jitter: 0.08 } },
     fix: { PEEP: 8 }, fixText: 'PEEP 3→8 (PEEPtot\'un yaklaşık %80\'i)',
-    marks: ['ETKİSİZ EFOR', 'GECİKME', 'AKIM SIFIRA İNMEDİ'],
-    look: ['Ekspiryum sonunda akım sıfıra inmez (EKSP. BİTMEDİ işareti: kesikli çizgi akımın inmesi gereken sıfır düzeyi, kalın çubuk kalan akım, sayı L/dk); efor geldiğinde akım önce sıfıra çekilir, soluk ancak sonra gelir ya da hiç gelmez.', 'Sağdaki Tetik eforu* değeri yüksek: hasta her solukta önce auto-PEEP\'i yenmek zorunda.', 'Eksp. hold ile PEEPtot\'u ölçün; eksternal PEEP\'i artırdıktan sonra tekrar ölçün. PEEPtot neredeyse değişmez, Ptepe de artmaz.'],
+    marks: ['ETKİSİZ EFOR', 'GECİKME', 'AKIM SIFIRA İNMEDİ', 'GAZ HAPSİ'],
+    look: ['Ekspiryum sonunda akım sıfıra inmez (EKSP. BİTMEDİ işareti: kesikli çizgi akımın inmesi gereken sıfır düzeyi, kalın çubuk kalan akım, sayı L/dk); efor geldiğinde akım önce sıfıra çekilir, soluk ancak sonra gelir ya da hiç gelmez.', 'Sağdaki Tetik eforu* değeri yüksek: hasta her solukta önce auto-PEEP\'i yenmek zorunda.', 'Eksp. hold ile PEEPtot\'u ölçün; eksternal PEEP\'i artırdıktan sonra tekrar ölçün. PEEPtot neredeyse değişmez, Ptepe de artmaz.', 'Akım sıfıra indiği hâlde gaz hapsolmuş olabilir: alveol basıncı Pcrit düzeyine inince hava yolları kapanır ve akım durur. Bu durumda GAZ HAPSİ işareti çıkar (kalın kesikli çizgi akımın sıfırda durduğu yeri, sayı auto-PEEP\'i cmH₂O olarak gösterir). Örneğin PSV\'ye geçince bunu görürsünüz; başlıktaki AUTO-PEEP uyarısı da sürer.'],
     mech: "Akım kısıtlılığında küçük hava yolları ekspiryumda kritik bir basınçta kapanır; alveoldeki basınç bu düzeyin altına inemez ve auto-PEEP oluşur. Hasta tetik için önce auto-PEEP'i, sonra tetik eşiğini aşmalıdır: auto-PEEP 10 ve tetik −1 cmH₂O ise 11 cmH₂O efor gerekir. Eksternal PEEP kritik basıncın altında kaldıkça ekspiratuvar akımı engellemez, ama hava yolu ile alveol arasındaki farkı kapatır: eksternal PEEP 7'ye çıkınca gereken efor 4 cmH₂O'ya iner. Auto-PEEP varken akım tetiği basınç tetiğinden üstün değildir; tetiği duyarlı yapmak sorunu çözmez.",
     causes: ["Hasta: ekspiratuvar akım kısıtlılığı (KOAH, astım), uzun zaman sabiti", "Ventilatör: yüksek dakika ventilasyonu, yüksek Vt ya da PS, kısa ekspiryum süresi", "Eksternal PEEP'in auto-PEEP'e göre düşük olması"],
     fixNote: "Eksternal PEEP PEEPtot'un yaklaşık %80'ine çıkınca eforların hepsi tetikler ve gecikme kısalır; hiperinflasyon artmaz. Eksternal PEEP dinamik hava hapsini gidermez: akım yine sıfıra inmez ve tetikte kısa bir gecikme kalır; bunun için dakika ventilasyonu azaltılır ve ekspiryum uzatılır. VCV'de PEEP eklenince Ptepe yükseliyorsa akım kısıtlılığı yoktur ya da PEEP fazladır, aşırı şişme olur: PEEP geri alınır. Diğer yollar: dakika ventilasyonunu azaltmak, ekspiryumu uzatmak, bronkodilatör. Hasta ayarlarındaki Akım kısıtlılığı ayarını sıfıra çekip aynı PEEP artışını deneyin: bu kez PEEPtot ve Ptepe de yükselir. Yalnızca PSV'ye geçmek düzeltme değildir: PS 10 ile VT yaklaşık 450'den 155 mL'ye, VE 5.5'ten 2 L/dk'ya düşer. Küçük soluk alveol basıncını hızla Pcrit düzeyine indirir ve akım ekspiryum sonunda sıfıra iner; bu yüzden akım eğrisinde auto-PEEP işareti kaybolur. Ama hava yolları Pcrit'te kapandığı için auto-PEEP sürer (PEEPtot yaklaşık 9, auto-PEEP yaklaşık 6 cmH₂O): PEEP/PEEPi* göstergesi, gecikmeli tetikler ve Eksp. hold bunu gösterir. Akımı sıfıra inen bir eğri auto-PEEP olmadığını kanıtlamaz.",
@@ -845,7 +852,7 @@ const SCEN_EN = {
   },
   peepi: {
     name: 'Auto-PEEP and external PEEP', short: 'Triggering with flow limitation',
-    look: ['Expiratory flow does not reach zero (EXP. UNFINISHED mark: the dashed line is the zero level flow should reach, the thick bar the remaining flow, the number in L/min); when an effort arrives, flow is first pulled to zero and the breath comes only afterwards, or not at all.', 'Trigger effort* on the right is high: on every breath the patient must first overcome auto-PEEP.', 'Measure PEEPtot with Exp. hold, then again after raising external PEEP. PEEPtot hardly changes and Ppeak does not rise.'],
+    look: ['Expiratory flow does not reach zero (EXP. UNFINISHED mark: the dashed line is the zero level flow should reach, the thick bar the remaining flow, the number in L/min); when an effort arrives, flow is first pulled to zero and the breath comes only afterwards, or not at all.', 'Trigger effort* on the right is high: on every breath the patient must first overcome auto-PEEP.', 'Measure PEEPtot with Exp. hold, then again after raising external PEEP. PEEPtot hardly changes and Ppeak does not rise.', 'Flow can reach zero while gas is still trapped: when alveolar pressure falls to Pcrit the airways close and flow stops. The GAS TRAPPED mark then appears (the thick dashed line shows where flow stops at zero, the number is auto-PEEP in cmH₂O). You see this after switching to PSV, for example; the AUTO-PEEP warning in the header stays on.'],
     mech: "With expiratory flow limitation, small airways close at a critical pressure during expiration; alveolar pressure cannot fall below this level and auto-PEEP develops. To trigger, the patient must first overcome auto-PEEP and then the trigger threshold: with auto-PEEP 10 and a −1 cmH₂O trigger, an 11 cmH₂O effort is needed. As long as external PEEP stays below the critical pressure it does not impede expiratory flow, but it closes the gap between airway and alveolus: with external PEEP 7, the effort needed drops to 4 cmH₂O. With auto-PEEP a flow trigger is not better than a pressure trigger; making the trigger more sensitive does not solve the problem.",
     causes: ["Patient: expiratory flow limitation (COPD, asthma), long time constant", "Ventilator: high minute ventilation, high Vt or PS, short expiratory time", "External PEEP low relative to auto-PEEP"],
     fixText: 'PEEP 3→8 (about 80% of PEEPtot)',
@@ -958,7 +965,7 @@ const EN = {
   // olaylar
   'ETKİSİZ EFOR': 'INEFFECTIVE EFFORT', 'GECİKME': 'TRIGGER DELAY', 'OTO': 'AUTO-TRIGGER', 'ÇİFT': 'DOUBLE TRIGGER',
   'ERKEN SİKLUS': 'EARLY CYCLING', 'GEÇ SİKLUS': 'DELAYED CYCLING', 'BASINÇ ÇIKINTISI': 'PRESSURE SPIKE', 'AKIM AÇLIĞI': 'FLOW STARVATION',
-  'TERS TETİK': 'REVERSE TRIGGER', 'AKIM SIFIRA İNMEDİ': 'FLOW NOT AT ZERO', 'DESTEK ↓': 'SUPPORT ↓',
+  'TERS TETİK': 'REVERSE TRIGGER', 'AKIM SIFIRA İNMEDİ': 'FLOW NOT AT ZERO', 'GAZ HAPSİ': 'GAS TRAPPED', 'DESTEK ↓': 'SUPPORT ↓',
 };
 // uzun statik bloklar
 const HTML_EN = {
@@ -1627,7 +1634,7 @@ function draw() {
       const x = LEFT + colOf(e.t);
       ctx.font = '600 11px system-ui,sans-serif';
       const nm = e.type === 'AKIM SIFIRA İNMEDİ' ? (LANG === 'en' ? 'EXP. UNFINISHED' : 'EKSP. BİTMEDİ') : T(e.type);
-      const lab = nm + (e.v != null ? ` ${e.v}` : ''), w = ctx.measureText(lab).width + 10;
+      const lab = nm + (e.v != null ? ` ${e.v}` : '') + (e.ap != null ? ` · auto-PEEP ${e.ap}` : ''), w = ctx.measureText(lab).width + 10;
       const bx = Math.min(Math.max(LEFT, x - w / 2), W - RIGHT - w);
       let row = 0;
       while (placed.some(q => q.ln === ln && q.row === row && bx < q.x2 + 4 && bx + w > q.x1 - 4)) row++;
@@ -1638,6 +1645,12 @@ function draw() {
       ctx.fillStyle = '#fff'; ctx.textAlign = 'left'; ctx.fillText(lab, bx + 5, y + 12);
       ctx.strokeStyle = ec; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
       ctx.beginPath(); ctx.moveTo(x + .5, y + 16); ctx.lineTo(x + .5, ln.y1); ctx.stroke(); ctx.setLineDash([]);
+      if (e.ap != null) {
+        // hapsolmuş gaz: akım sıfırda, kesikli sıfır çizgisi boyunca kapanmadan sonraki ekspiryumu işaretle
+        const ch = ln.ch, y0 = ln.y1 - (0 - ch.min) / (ch.max - ch.min) * (ln.y1 - ln.y0);
+        ctx.strokeStyle = ec; ctx.lineWidth = 3; ctx.setLineDash([6, 4]);
+        ctx.beginPath(); ctx.moveTo(x, y0); ctx.lineTo(Math.min(x + 60, W - RIGHT), y0); ctx.stroke(); ctx.setLineDash([]);
+      }
       if (e.v != null) {
         // kalan ekspiratuvar akım: sıfır çizgisinden akımın o anki değerine kalın çubuk
         const ch = ln.ch, ym = v => ln.y1 - (v - ch.min) / (ch.max - ch.min) * (ln.y1 - ln.y0);
@@ -1702,7 +1715,7 @@ function updNums() {
   } else { $('nPpl').textContent = '--'; $('nDP').textContent = '--'; $('nCst').textContent = '--'; }
   const pi = sim.curBreath ? sim.curBreath.peepi : 0;
   $('nPeep').textContent = P.PEEP + ' / ' + pi.toFixed(1);
-  $('nPeep').parentElement.classList.toggle('alert', pi >= 1.5);
+  $('nPeep').parentElement.classList.toggle('alert', pi >= 1.5); $('nPeep').parentElement.classList.toggle('hot', pi >= 3);
   // tetik için gereken kas basıncı ≈ PEEPi + tetik eşiği (akım tetiğinde eşik akımı × direnç)
   const thr = P.trigType === 'pressure' ? P.trigP : P.trig / 60 * (P.R + 1.5);
   const te0 = pi + thr;
@@ -1785,6 +1798,9 @@ function updHdr() {
       const ev = sim.events.filter(e => (patMod || s.marks.includes(e.type)) && sim.t - e.t < 3 && sim.t >= e.t).pop();
       if (ev) msg = '⚠ ' + T(ev.type);
     }
+    // hava hapsi her modda görünsün: başka uyarı yoksa auto-PEEP'i başlıkta göster
+    const pi = sim.curBreath ? sim.curBreath.peepi : 0;
+    if (!msg && pi >= 2) msg = '⚠ AUTO-PEEP ' + pi.toFixed(0) + ' cmH₂O';
   }
   al.textContent = msg; al.classList.toggle('on', !!msg);
 }
