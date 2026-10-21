@@ -495,7 +495,7 @@ function startBreath(S, kind) {
   // yeni soluk başlarken ekspiratuvar akım hâlâ sürüyorsa: ekspiryum bitmedi (dinamik hiperinflasyon)
   // auto-PEEP: soluk başlarken alveol basıncı PEEP'in üstünde, hapsolan hacim = auto-PEEP × C
   const ap = (1000 / p.C) * S.V - p.PEEP;
-  if (ap >= 2.5) S.events.push({ t, type: 'AUTO-PEEP', ch: 'vol', ap: Math.round(ap), vt: Math.round(ap * p.C / 10) * 10, f: S.expF < -3 ? Math.round(S.expF) : null });
+  if (ap >= 1.5 && ap * p.C >= 50) S.events.push({ t, type: 'AUTO-PEEP', ch: 'vol', ap: Math.round(ap), vt: Math.round(ap * p.C / 10) * 10, f: S.expF < -3 ? Math.round(S.expF) : null });
   S.breaths.push(b);
   S.curBreath = b; S.phase = 'insp'; S.phaseStart = t; S.Vtid = 0; S.Fpeak = 0; S.lastBreath = t; S.etsT = 0;
   if (p.reverse && p.reverse.ratio && kind === 'time') {
@@ -608,10 +608,12 @@ function step(S, dt) {
       F = (p.PEEP - Palv) / (p.R + Rin);
       Paw = p.PEEP - Rin * F;
     } else {
-      // akım kısıtlılığı: küçük hava yolları kritik basınçta kapanır; ekspiryumu PEEP değil
-      // max(PEEP, Pcrit) sürer. Bu yüzden Pcrit altındaki eksternal PEEP ekspiratuvar akımı değiştirmez.
-      const D = Math.max(p.PEEP, p.Pcrit || 0);
-      F = Palv > D ? (D - Palv) / (p.R * (p.Rexp || 1) + Rv) : 0;
+      // akım kısıtlılığı: alveol basıncı Pcrit'e inince küçük hava yolları daralır. Pcrit'e kadar akımı
+      // Pcrit sürer (bu yüzden Pcrit altındaki eksternal PEEP akımı değiştirmez); sonra direnç 2 kat
+      // artar ve akım sıfıra inmeyen yavaş bir kuyrukla PEEP'e doğru sürer.
+      const Re = p.R * (p.Rexp || 1);
+      if (p.Pcrit && Palv > Math.max(p.PEEP, p.Pcrit)) F = (Math.max(p.PEEP, p.Pcrit) - Palv) / (Re + Rv);
+      else F = (p.PEEP - Palv) / ((p.Pcrit && p.Pcrit > p.PEEP ? 2 : 1) * Re + Rv);
       Paw = p.PEEP - Rvy * F;
     }
   }
@@ -719,13 +721,13 @@ const SCEN = {
   },
   peepi: {
     name: 'Auto-PEEP ve eksternal PEEP', short: 'Akım kısıtlılığında tetiklemek',
-    p: { mode: 'VCV', PEEP: 3, Vt: 0.45, Fset: 60, rate: 12, trig: 2, C: 60, R: 18, Rexp: 1.6, Pcrit: 8, pt: { rr: 16, pmax: 7, ti: 0.8, jitter: 0.08 } },
-    fix: { PEEP: 8 }, fixText: 'PEEP 3→8 (PEEPtot\'un yaklaşık %80\'i)',
+    p: { mode: 'VCV', PEEP: 3, Vt: 0.35, Fset: 60, rate: 12, trig: 2, C: 30, R: 8, Pcrit: 8, pt: { rr: 20, pmax: 4, ti: 0.5, jitter: 0.08 } },
+    fix: { PEEP: 6 }, fixText: 'PEEP 3→6 (PEEPtot yaklaşık 6)',
     marks: ['ETKİSİZ EFOR', 'GECİKME', 'AUTO-PEEP'],
-    look: ['Hapsolan hacim işareti: hacim eğrisi sıfıra dönmez, kalın çubuk hapsolan hacmi (mL) gösterir; akım eğrisinde kalın çubuk, soluk başlarken hâlâ akan ekspiratuvar akımdır. Efor geldiğinde akım önce sıfıra çekilir, soluk ancak sonra gelir ya da hiç gelmez.', 'Sağdaki Tetik eforu* değeri yüksek: hasta her solukta önce auto-PEEP\'i yenmek zorunda.', 'Eksp. hold ile PEEPtot\'u ölçün; eksternal PEEP\'i artırdıktan sonra tekrar ölçün. PEEPtot neredeyse değişmez, Ptepe de artmaz.', 'Akım sıfıra indiği hâlde gaz hapsolmuş olabilir: alveol basıncı Pcrit düzeyine inince hava yolları kapanır ve akım durur. Hacim eğrisi yine sıfıra dönmez; PSV\'ye geçince bunu görürsünüz.'],
+    look: ['Hapsolan hacim işareti: hacim eğrisi sıfıra dönmez, kalın çubuk hapsolan hacmi (mL) gösterir; akım eğrisinde kalın çubuk, soluk başlarken hâlâ akan ekspiratuvar akımdır. Efor geldiğinde akım önce sıfıra çekilir, soluk ancak sonra gelir ya da hiç gelmez.', 'Sağdaki Tetik eforu* değeri yüksek: hasta her solukta önce auto-PEEP\'i yenmek zorunda.', 'Eksp. hold ile PEEPtot\'u ölçün; eksternal PEEP\'i artırdıktan sonra tekrar ölçün. PEEPtot eksternal PEEP artışından çok daha az yükselir (yaklaşık 6 → 7.5), Ptepe neredeyse değişmez.', 'Hasta panelindeki τ kutusu burada uyarı vermez: τ kısa, Te 3τ\'dan uzun. Hava hapsinin nedeni uzun τ değil, dinamik hava yolu çökmesidir (akım kısıtlılığı): alveol basıncı Pcrit\'e inince küçük hava yolları daralır ve akım yavaş bir kuyrukla sürer. Te ≥ 3τ olması akım kısıtlılığında auto-PEEP olmadığını göstermez.'],
     mech: "Akım kısıtlılığında küçük hava yolları ekspiryumda kritik bir basınçta kapanır; alveoldeki basınç bu düzeyin altına inemez ve auto-PEEP oluşur. Hasta tetik için önce auto-PEEP'i, sonra tetik eşiğini aşmalıdır: auto-PEEP 10 ve tetik −1 cmH₂O ise 11 cmH₂O efor gerekir. Eksternal PEEP kritik basıncın altında kaldıkça ekspiratuvar akımı engellemez, ama hava yolu ile alveol arasındaki farkı kapatır: eksternal PEEP 7'ye çıkınca gereken efor 4 cmH₂O'ya iner. Auto-PEEP varken akım tetiği basınç tetiğinden üstün değildir; tetiği duyarlı yapmak sorunu çözmez.",
     causes: ["Hasta: ekspiratuvar akım kısıtlılığı (KOAH, astım), uzun zaman sabiti", "Ventilatör: yüksek dakika ventilasyonu, yüksek Vt ya da PS, kısa ekspiryum süresi", "Eksternal PEEP'in auto-PEEP'e göre düşük olması"],
-    fixNote: "Eksternal PEEP PEEPtot'un yaklaşık %80'ine çıkınca eforların hepsi tetikler ve gecikme kısalır; hiperinflasyon artmaz. Eksternal PEEP dinamik hava hapsini gidermez: akım yine sıfıra inmez ve tetikte kısa bir gecikme kalır; bunun için dakika ventilasyonu azaltılır ve ekspiryum uzatılır. VCV'de PEEP eklenince Ptepe yükseliyorsa akım kısıtlılığı yoktur ya da PEEP fazladır, aşırı şişme olur: PEEP geri alınır. Diğer yollar: dakika ventilasyonunu azaltmak, ekspiryumu uzatmak, bronkodilatör. Hasta ayarlarındaki Akım kısıtlılığı ayarını sıfıra çekip aynı PEEP artışını deneyin: bu kez PEEPtot ve Ptepe de yükselir. Yalnızca PSV'ye geçmek düzeltme değildir: PS 10 ile VT yaklaşık 450'den 155 mL'ye, VE 5.5'ten 2 L/dk'ya düşer. Küçük soluk alveol basıncını hızla Pcrit düzeyine indirir ve akım ekspiryum sonunda sıfıra iner; bu yüzden akım eğrisinde auto-PEEP işareti kaybolur. Ama hava yolları Pcrit'te kapandığı için auto-PEEP sürer (PEEPtot yaklaşık 9, auto-PEEP yaklaşık 6 cmH₂O): PEEP/PEEPi* göstergesi, gecikmeli tetikler ve Eksp. hold bunu gösterir. Akımı sıfıra inen bir eğri auto-PEEP olmadığını kanıtlamaz.",
+    fixNote: "Eksternal PEEP genellikle ölçülen PEEPtot'un %75–85'inden başlatılır, eforlar tetikleyene ve Ptepe artmayana kadar titre edilir. Burada PEEPtot yaklaşık 6: PEEP 5'te (%85) etkisiz efor ve gecikme kaybolur ama hapsolan hacim işareti sürer (yaklaşık 65 mL); PEEP 6'da işaret de kaybolur (yaklaşık 45 mL kalır). Ptepe yaklaşık 25'te kalır; hiperinflasyon artmaz. Hapsolan hacim 85 mL'den 45 mL'ye iner, ama bunun nedeni hapsin çözülmesi değil, referans PEEP'in yükselmesidir: eksternal PEEP dinamik hava hapsini gidermez, akım yine sıfıra inmez. Hapsi azaltmak için dakika ventilasyonu azaltılır ve ekspiryum uzatılır. VCV'de PEEP eklenince Ptepe yükseliyorsa akım kısıtlılığı yoktur ya da PEEP fazladır, aşırı şişme olur: PEEP geri alınır. Diğer yollar: dakika ventilasyonunu azaltmak, ekspiryumu uzatmak, bronkodilatör. Hasta ayarlarındaki Akım kısıtlılığı ayarını sıfıra çekip aynı PEEP artışını deneyin: bu kez PEEPtot ve Ptepe de yükselir. Yalnızca PSV'ye geçmek düzeltme değildir: PS 10 ile VT yaklaşık 350'den 175 mL'ye, VE 6.3'ten 3.5 L/dk'ya düşer; auto-PEEP (yaklaşık 3 cmH₂O), sıfıra inmeyen akım ve gecikmeli tetikler sürer.",
   },
   prvc: {
     name: 'PRVC\'de destek azalması', short: 'Hasta çektikçe basınç düşer',
@@ -799,13 +801,13 @@ const SCEN = {
   },
   stack: {
     name: 'Hava hapsi (breath stacking)', short: 'Ekspiryum bitmeden yeni soluk',
-    p: { mode: 'VCV', PEEP: 5, Vt: 0.5, Fset: 40, rate: 26, trig: 2, C: 60, R: 22 },
-    fix: { rate: 12, Fset: 60 }, fixText: 'f 26→12, akım 40→60 L/dk',
+    p: { mode: 'VCV', PEEP: 5, Vt: 0.45, Fset: 40, rate: 26, trig: 2, C: 50, R: 17 },
+    fix: { rate: 16, Fset: 60 }, fixText: 'f 26→16, akım 40→60 L/dk',
     marks: ['AUTO-PEEP'],
-    look: ['Ekspiratuvar akım sıfıra dönmeden yeni soluk başlar; hacim eğrisi sıfıra dönmez. Hapsolan hacim işaretinde hacimdeki kalın çubuk hapsolan hacmi (mL), akımdaki kalın çubuk hâlâ akan ekspiratuvar akımı gösterir.', 'Ekspiratuvar hold (Eksp. hold) yapın: PEEPtot ayarlanan PEEP\'ten yüksek çıkar, fark auto-PEEP\'tir.', 'Uzun zaman sabiti (τ = R×C) ve kısa ekspiryum süresi hava hapsini artırır: Te en az 3τ olmalıdır (3τ\'da akciğer yaklaşık %95 boşalır). Hasta panelindeki τ kutusu bunu gösterir.'],
+    look: ['Ekspiratuvar akım sıfıra dönmeden yeni soluk başlar; hacim eğrisi sıfıra dönmez. Hapsolan hacim işaretinde hacimdeki kalın çubuk hapsolan hacmi (mL), akımdaki kalın çubuk hâlâ akan ekspiratuvar akımı gösterir.', 'Ekspiratuvar hold (Eksp. hold) yapın: PEEPtot ayarlanan PEEP\'ten yüksek çıkar, fark auto-PEEP\'tir.', 'Uzun zaman sabiti (τ = R×C) ve kısa ekspiryum süresi hava hapsini artırır: Te en az 3τ olmalıdır (3τ\'da akciğer yaklaşık %95 boşalır). Hasta panelindeki τ kutusu bunu gösterir.', 'VCV\'de hacim sabit olduğu için Ptepe ve Pplato hapsin biriktiği ilk soluklarda adım adım yükselir, yeni dengede yüksek kalır. PCV\'ye geçin: auto-PEEP sürüş basıncını (Pinsp hedefi − PEEPtot) azaltır ve VT düşer.', 'Gerçek ventilatörler hacmi her solukta sıfırlar; kararlı durumda hacim eğrisi auto-PEEP olsa bile sıfıra döner. Simülatör hapsolan hacmi göstermek için hacmi ayarlı PEEP\'teki akciğer hacmine göre çizer. Eksp. hold ölçümü için hasta pasif olmalıdır; efor Palv\'yi düşürür ve sonucu bozar.'],
     mech: "Ekspiryum sonunda alveolde gaz kalırsa (auto-PEEP) hastanın her eforu önce bu basıncı dengelemek zorundadır; bu, gecikmeli tetiklemenin ve etkisiz eforun ana hasta faktörüdür. Ekshalasyon valfinin geç açılması ya da ekspiryuma taşan inflasyon dinamik hiperinflasyonu artırır.",
     causes: ["Yüksek frekans, uzun Ti, yüksek Vt", "Hasta: uzun zaman sabiti (KOAH, bronkospazm)"],
-    fixNote: 'Daha düşük frekans ve daha yüksek akım ekspiryuma zaman bırakır; auto-PEEP yaklaşık 4 → 0.5 cmH₂O iner. Burada τ yaklaşık 1.4 s, 3τ yaklaşık 4.2 s: f 12 ve akım 60 ile Te yaklaşık 4.5 s olur ve 3τ\'yı karşılar. Ptepe akım arttığı için biraz yükselir (dirençsel basınç); Pplato düşer. VE yaklaşık 13 → 6 L/dk azalır: KOAH\'ta bu kabul edilen bir ödünleşimdir (permisif hiperkapni), pH ve PaCO₂ izlenir. Düzeltmeden sonra Eksp. hold ile PEEPtot\'u tekrar ölçün.',
+    fixNote: 'Daha düşük frekans ve daha yüksek akım (daha kısa Ti) ekspiryuma zaman bırakır; auto-PEEP yaklaşık 2 → 0.3 cmH₂O, hapsolan hacim yaklaşık 95 → 15 mL iner. Burada τ yaklaşık 0.9 s, 3τ yaklaşık 2.8 s: Te 1.6 s\'den 3.3 s\'ye uzar ve 3τ\'yı karşılar; I:E 1:2.4\'ten 1:7\'ye çıkar. Frekansı düşürmek ekspiryuma en çok zaman kazandıran adımdır. Ptepe akım arttığı için biraz yükselir (dirençsel basınç); Pplato düşer. VE yaklaşık 12 → 7 L/dk azalır: KOAH\'ta bu kabul edilen bir ödünleşimdir (permisif hiperkapni), pH ve PaCO₂ izlenir. Düzeltmeden sonra Eksp. hold ile PEEPtot\'u tekrar ölçün.',
   },
 };
 
@@ -848,11 +850,11 @@ const SCEN_EN = {
   },
   peepi: {
     name: 'Auto-PEEP and external PEEP', short: 'Triggering with flow limitation',
-    look: ['Trapped-volume mark: the volume curve does not return to zero, and the thick bar shows the trapped volume (mL); on the flow curve the thick bar is the expiratory flow still running when the breath starts. When an effort arrives, flow is first pulled to zero and the breath comes only afterwards, or not at all.', 'Trigger effort* on the right is high: on every breath the patient must first overcome auto-PEEP.', 'Measure PEEPtot with Exp. hold, then again after raising external PEEP. PEEPtot hardly changes and Ppeak does not rise.', 'Flow can reach zero while gas is still trapped: when alveolar pressure falls to Pcrit the airways close and flow stops. The volume curve still does not return to zero; you see this after switching to PSV.'],
+    look: ['Trapped-volume mark: the volume curve does not return to zero, and the thick bar shows the trapped volume (mL); on the flow curve the thick bar is the expiratory flow still running when the breath starts. When an effort arrives, flow is first pulled to zero and the breath comes only afterwards, or not at all.', 'Trigger effort* on the right is high: on every breath the patient must first overcome auto-PEEP.', 'Measure PEEPtot with Exp. hold, then again after raising external PEEP. PEEPtot rises much less than external PEEP (about 6 → 7.5) and Ppeak hardly changes.', 'The τ box in the patient panel gives no warning here: τ is short and Te is longer than 3τ. The cause of trapping is not a long τ but dynamic airway collapse (flow limitation): when alveolar pressure falls to Pcrit the small airways narrow and flow continues as a slow tail. Te ≥ 3τ does not rule out auto-PEEP with flow limitation.'],
     mech: "With expiratory flow limitation, small airways close at a critical pressure during expiration; alveolar pressure cannot fall below this level and auto-PEEP develops. To trigger, the patient must first overcome auto-PEEP and then the trigger threshold: with auto-PEEP 10 and a −1 cmH₂O trigger, an 11 cmH₂O effort is needed. As long as external PEEP stays below the critical pressure it does not impede expiratory flow, but it closes the gap between airway and alveolus: with external PEEP 7, the effort needed drops to 4 cmH₂O. With auto-PEEP a flow trigger is not better than a pressure trigger; making the trigger more sensitive does not solve the problem.",
     causes: ["Patient: expiratory flow limitation (COPD, asthma), long time constant", "Ventilator: high minute ventilation, high Vt or PS, short expiratory time", "External PEEP low relative to auto-PEEP"],
-    fixText: 'PEEP 3→8 (about 80% of PEEPtot)',
-    fixNote: "With external PEEP at about 80% of PEEPtot every effort triggers and the delay shortens; hyperinflation does not increase. External PEEP does not remove dynamic air trapping: flow still does not reach zero and a short trigger delay remains; for that, lower minute ventilation and lengthen expiration. In VCV, if Ppeak rises when PEEP is added, there is no flow limitation or PEEP is too high and causes overdistension: take the PEEP back. Other options: lower minute ventilation, lengthen expiration, bronchodilators. Set Flow limitation in the Patient settings to zero and try the same PEEP increase: this time PEEPtot and Ppeak rise too. Switching to PSV alone is not a fix: with PS 10, VT falls from about 450 to 155 mL and VE from 5.5 to 2 L/min. The small breath brings alveolar pressure down to Pcrit quickly and flow reaches zero by end-expiration, so the auto-PEEP sign disappears from the flow curve. But because the airways close at Pcrit, auto-PEEP remains (PEEPtot about 9, auto-PEEP about 6 cmH₂O): the PEEP/PEEPi* readout, the delayed triggers and an Exp. hold show it. Flow reaching zero does not prove there is no auto-PEEP.",
+    fixText: 'PEEP 3→6 (PEEPtot about 6)',
+    fixNote: "External PEEP is usually started at 75–85% of measured PEEPtot and titrated until efforts trigger and Ppeak does not rise. Here PEEPtot is about 6: at PEEP 5 (85%) ineffective efforts and delays disappear but the trapped-volume mark remains (about 65 mL); at PEEP 6 the mark goes too (about 45 mL left). Ppeak stays near 25; hyperinflation does not increase. Trapped volume falls from 85 to 45 mL, not because trapping resolves but because the reference PEEP rises: external PEEP does not remove dynamic air trapping and flow still does not reach zero. To reduce trapping, lower minute ventilation and lengthen expiration. In VCV, if Ppeak rises when PEEP is added, there is no flow limitation or PEEP is too high and causes overdistension: take the PEEP back. Other options: lower minute ventilation, lengthen expiration, bronchodilators. Set Flow limitation in the Patient settings to zero and try the same PEEP increase: this time PEEPtot and Ppeak rise too. Switching to PSV alone is not a fix: with PS 10, VT falls from about 350 to 175 mL and VE from 6.3 to 3.5 L/min; auto-PEEP (about 3 cmH₂O), non-zero end-expiratory flow and delayed triggers persist.",
   },
   prvc: {
     name: 'Falling support in PRVC', short: 'The harder the patient pulls, the lower the pressure',
@@ -912,11 +914,11 @@ const SCEN_EN = {
   },
   stack: {
     name: 'Air trapping (breath stacking)', short: 'New breath before expiration ends',
-    look: ['A new breath starts before expiratory flow returns to zero; the volume curve does not return to zero. At the trapped-volume mark the thick bar on volume shows the trapped volume (mL) and the one on flow the expiratory flow still running.', 'Do an expiratory hold (Exp. hold): PEEPtot is higher than set PEEP; the difference is auto-PEEP.', 'A long time constant (τ = R×C) and short expiratory time increase air trapping: Te should be at least 3τ (about 95% emptying at 3τ). The τ box in the patient panel shows this.'],
+    look: ['A new breath starts before expiratory flow returns to zero; the volume curve does not return to zero. At the trapped-volume mark the thick bar on volume shows the trapped volume (mL) and the one on flow the expiratory flow still running.', 'Do an expiratory hold (Exp. hold): PEEPtot is higher than set PEEP; the difference is auto-PEEP.', 'A long time constant (τ = R×C) and short expiratory time increase air trapping: Te should be at least 3τ (about 95% emptying at 3τ). The τ box in the patient panel shows this.', 'In VCV the volume is fixed, so Ppeak and Pplat rise step by step over the first breaths while gas accumulates, then stay high at the new steady state. Switch to PCV: auto-PEEP reduces the driving pressure (Pinsp target − PEEPtot) and VT falls.', 'Real ventilators reset volume on every breath; at steady state the volume curve returns to zero even with auto-PEEP. The simulator draws volume relative to lung volume at set PEEP so the trapped volume is visible. An Exp. hold needs a passive patient; effort lowers Palv and spoils the reading.'],
     mech: "If gas remains in the alveoli at end-expiration (auto-PEEP), every patient effort must first offset this pressure; it is the main patient factor in delayed triggering and ineffective efforts. Late opening of the exhalation valve or inflation spilling into expiration increases dynamic hyperinflation.",
     causes: ["High rate, long Ti, high Vt", "Patient: long time constant (COPD, bronchospasm)"],
-    fixText: 'f 26→12, flow 40→60 L/min',
-    fixNote: 'A lower rate and higher flow leave time for expiration; auto-PEEP falls from about 4 to 0.5 cmH₂O. Here τ is about 1.4 s and 3τ about 4.2 s: with f 12 and flow 60, Te is about 4.5 s and meets 3τ. Ppeak rises a little because flow is higher (resistive pressure); Pplat falls. VE falls from about 13 to 6 L/min: in COPD this is an accepted trade-off (permissive hypercapnia); follow pH and PaCO₂. Re-measure PEEPtot with Exp. hold after the change.',
+    fixText: 'f 26→16, flow 40→60 L/min',
+    fixNote: 'A lower rate and higher flow (shorter Ti) leave time for expiration; auto-PEEP falls from about 2 to 0.3 cmH₂O and trapped volume from about 95 to 15 mL. Here τ is about 0.9 s and 3τ about 2.8 s: Te lengthens from 1.6 to 3.3 s and meets 3τ; I:E goes from 1:2.4 to 1:7. Lowering the rate gains the most expiratory time. Ppeak rises a little because flow is higher (resistive pressure); Pplat falls. VE falls from about 12 to 7 L/min: in COPD this is an accepted trade-off (permissive hypercapnia); follow pH and PaCO₂. Re-measure PEEPtot with Exp. hold after the change.',
   },
 };
 
@@ -1737,7 +1739,7 @@ function updNums() {
   } else { $('nPpl').textContent = '--'; $('nDP').textContent = '--'; $('nCst').textContent = '--'; }
   const pi = sim.curBreath ? sim.curBreath.peepi : 0;
   $('nPeep').textContent = P.PEEP + ' / ' + pi.toFixed(1);
-  $('nPeep').parentElement.classList.toggle('alert', pi >= 2);
+  $('nPeep').parentElement.classList.toggle('alert', pi >= 1.5);
   // tetik için gereken kas basıncı ≈ PEEPi + tetik eşiği (akım tetiğinde eşik akımı × direnç)
   const thr = P.trigType === 'pressure' ? P.trigP : P.trig / 60 * (P.R + 1.5);
   const te0 = pi + thr;
